@@ -17,16 +17,17 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useBusiness } from "@/components/providers/business-provider";
+import { can, type PlanFeature } from "@/lib/plans";
 import type { AccountType } from "@/types";
 
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
-  { href: "/import", label: "Import", icon: Upload },
-  { href: "/recurring", label: "Recurring", icon: Repeat },
-  { href: "/accounts", label: "Accounts", icon: Wallet },
-  { href: "/categories", label: "Categories", icon: Tag },
-  { href: "/copilot", label: "Copilot", icon: Bot },
+const NAV: { href: string; label: string; icon: typeof LayoutDashboard; feature: PlanFeature }[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, feature: "dashboard" },
+  { href: "/transactions", label: "Transactions", icon: ArrowLeftRight, feature: "transactions" },
+  { href: "/import", label: "Import", icon: Upload, feature: "import" },
+  { href: "/recurring", label: "Recurring", icon: Repeat, feature: "recurring" },
+  { href: "/accounts", label: "Accounts", icon: Wallet, feature: "accounts" },
+  { href: "/categories", label: "Categories", icon: Tag, feature: "categories" },
+  { href: "/copilot", label: "Copilot", icon: Bot, feature: "copilot" },
 ];
 
 const accountIcons: Record<AccountType, typeof Landmark> = {
@@ -38,6 +39,8 @@ const accountIcons: Record<AccountType, typeof Landmark> = {
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { business, accounts } = useBusiness();
+  const visible = NAV.filter((item) => can(business?.plan, item.feature));
+  const locked = NAV.length - visible.length;
 
   return (
     <div className="flex h-full flex-col">
@@ -52,13 +55,14 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </Link>
 
       <nav className="flex-1 space-y-1 px-3 py-2">
-        {NAV.map((item) => {
+        {visible.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
+              data-tour={`nav-${item.href}`}
               onClick={onNavigate}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",

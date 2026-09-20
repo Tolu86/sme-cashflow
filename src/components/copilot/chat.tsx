@@ -113,7 +113,10 @@ export function CopilotChat() {
         }}
         className="border-t border-zinc-200 p-4 dark:border-zinc-800"
       >
-        <div className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900">
+        <div
+          data-tour="copilot-input"
+          className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900"
+        >
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}

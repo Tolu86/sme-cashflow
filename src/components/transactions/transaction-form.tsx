@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useBusiness } from "@/components/providers/business-provider";
+import { useAuth } from "@/components/providers/auth-provider";
 import { createOne, updateOne, removeOne } from "@/lib/firestore/helpers";
 import { toMinor, toMajor } from "@/lib/money";
 import { todayISO } from "@/lib/dates";
+import { validateScreenshot, uploadScreenshot, deleteScreenshot } from "@/lib/storage";
 import type { Transaction, TxType } from "@/types";
 
 interface Props {
@@ -25,6 +27,7 @@ const TYPE_OPTIONS = [
 
 export function TransactionForm({ open, onClose, transaction }: Props) {
   const { business, accounts, categories, vendors, reload } = useBusiness();
+  const { user } = useAuth();
   const bizId = business?.id;
 
   const [type, setType] = useState<TxType>("expense");
@@ -40,6 +43,11 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [screenshot, setScreenshot] = useState<File | null>(null);
+  const [screenshotUrl, setScreenshotUrl] = useState("");
+  const [removingScreenshot, setRemovingScreenshot] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (!open) return;
     if (transaction) {
@@ -53,6 +61,9 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
       setNotes(transaction.notes ?? "");
       setTags(transaction.tags.join(", "));
       setStatus(transaction.status);
+      setScreenshot(null);
+      setScreenshotUrl(transaction.screenshotUrl ?? "");
+      setRemovingScreenshot(false);
     } else {
       setType("expense");
       setAmount("");
@@ -65,6 +76,9 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
       setNotes("");
       setTags("");
       setStatus("cleared");
+      setScreenshot(null);
+      setScreenshotUrl("");
+      setRemovingScreenshot(false);
     }
     setError(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -122,6 +136,20 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
         vendorId = null;
       }
 
+      let shotUrl = transaction?.screenshotUrl ?? null;
+      let shotPath = transaction?.screenshotPath ?? null;
+      if (screenshot) {
+        if (!user) throw new Error("Sign in to attach a screenshot.");
+        const uploaded = await uploadScreenshot(user.uid, screenshot);
+        if (transaction?.screenshotPath) await deleteScreenshot(transaction.screenshotPath);
+        shotUrl = uploaded.url;
+        shotPath = uploaded.path;
+      } else if (removingScreenshot) {
+        if (transaction?.screenshotPath) await deleteScreenshot(transaction.screenshotPath);
+        shotUrl = null;
+        shotPath = null;
+      }
+
       const data = {
         businessId: bizId,
         accountId,
@@ -134,6 +162,8 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
         notes: notes.trim(),
         status,
+        screenshotUrl: shotUrl,
+        screenshotPath: shotPath,
         updatedAt: Date.now(),
         autoCategorized: transaction?.autoCategorized ?? false,
       } as Partial<Transaction>;
@@ -161,12 +191,34 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
     return original.toLowerCase() !== vendor.trim().toLowerCase();
   }
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const err = validateScreenshot(file);
+    if (err) {
+      setError(err);
+      e.target.value = "";
+      return;
+    }
+    setError(null);
+    setScreenshot(file);
+    setRemovingScreenshot(false);
+    setScreenshotUrl(URL.createObjectURL(file));
+  }
+
+  function removeScreenshot() {
+    setScreenshot(null);
+    setRemovingScreenshot(true);
+    setScreenshotUrl("");
+  }
+
   async function handleDelete() {
     if (!bizId || !transaction) return;
     if (!confirm("Delete this transaction? This cannot be undone.")) return;
     setSaving(true);
     try {
       await removeOne(bizId, "transactions", transaction.id);
+      await deleteScreenshot(transaction.screenshotPath);
       await reload();
       onClose();
     } catch (err) {
@@ -252,6 +304,37 @@ export function TransactionForm({ open, onClose, transaction }: Props) {
 
         <Input label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. June electric bill" />
         <Input label="Tags (comma separated)" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="rent, utilities" />
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300">Receipt / screenshot</label>
+          {screenshotUrl ? (
+            <div>
+              <img
+                src={screenshotUrl}
+                alt="Transaction receipt"
+                className="h-44 w-full rounded-lg border border-zinc-200 object-cover dark:border-zinc-700"
+              />
+              <div className="mt-2 flex gap-2">
+                <Button type="button" variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
+                  Replace image
+                </Button>
+                <Button type="button" variant="danger" size="sm" onClick={removeScreenshot}>
+                  Remove
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex h-24 w-full items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 text-sm font-medium text-zinc-500 transition-colors hover:border-emerald-500 hover:text-emerald-600 dark:border-zinc-700 dark:text-zinc-400"
+            >
+              Upload screenshot
+            </button>
+          )}
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+        </div>
+
         <Select
           label="Status"
           value={status}

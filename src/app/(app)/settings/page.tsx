@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Save, Trash2, Users, Building2, Bell } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Plus, Save, Trash2, Users, Building2, Bell, Crown, Check } from "lucide-react";
 import { useBusiness } from "@/components/providers/business-provider";
 import { useAuth } from "@/components/providers/auth-provider";
 import { LoadingScreen } from "@/components/ui/empty-state";
@@ -14,11 +14,12 @@ import { setDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { CURRENCIES } from "@/lib/constants";
 import { toMinor, toMajor } from "@/lib/money";
-import type { VendorKind } from "@/types";
+import { PLANS, formatPrice, planMeta } from "@/lib/plans";
+import type { PlanId, VendorKind } from "@/types";
 
 export default function SettingsPage() {
   const { business, vendors, accounts, reload, loading } = useBusiness();
-  const { profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
 
   const [businessName, setBusinessName] = useState(business?.name ?? "");
   const [currency, setCurrency] = useState(profile?.currency ?? "USD");
@@ -29,6 +30,33 @@ export default function SettingsPage() {
   const [vendorName, setVendorName] = useState("");
   const [vendorKind, setVendorKind] = useState<VendorKind>("supplier");
   const [vendorError, setVendorError] = useState<string | null>(null);
+
+  const [upgrading, setUpgrading] = useState<Exclude<PlanId, null> | null>(null);
+  const [planNotice, setPlanNotice] = useState<string | null>(null);
+  const current = planMeta(business?.plan);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const reference = params.get("reference") ?? params.get("trxref");
+    const plan = params.get("plan") as Exclude<PlanId, null> | null;
+    if (reference && plan && user && business?.id) {
+      (async () => {
+        try {
+          const token = await user.getIdToken();
+          const res = await fetch("/api/payments/verify", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ reference, businessId: business.id, plan }),
+          });
+          if (res.ok) setPlanNotice(`Payment received — you're on the ${planMeta(plan).name} plan now.`);
+        } finally {
+          window.history.replaceState({}, "", "/settings#plans");
+          await reload();
+        }
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, business?.id]);
 
   async function saveDetails(e?: React.FormEvent) {
     e?.preventDefault();
@@ -68,6 +96,32 @@ export default function SettingsPage() {
     await reload();
   }
 
+  async function startUpgrade(plan: Exclude<PlanId, null>) {
+    if (!business?.id || !user) return;
+    setUpgrading(plan);
+    setPlanNotice(null);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch("/api/payments/init", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId: business.id, plan }),
+      });
+      const data = (await res.json()) as { error?: string; mode?: string; authorizationUrl?: string };
+      if (!res.ok) throw new Error(data.error ?? "Failed to start upgrade.");
+      if (data.mode === "paystack" && data.authorizationUrl) {
+        window.location.href = data.authorizationUrl;
+        return;
+      }
+      await reload();
+      setPlanNotice(`You're on the ${planMeta(plan).name} plan now.`);
+    } catch (err) {
+      setPlanNotice(err instanceof Error ? err.message : "Failed to upgrade.");
+    } finally {
+      setUpgrading(null);
+    }
+  }
+
   if (loading || !business) return <LoadingScreen label="Loading settings..." />;
 
   return (
@@ -75,6 +129,71 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Settings</h1>
         <p className="text-sm text-zinc-500">Manage your business preferences.</p>
+      </div>
+
+      <div id="plans">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Crown size={16} className="text-amber-500" />
+              <CardTitle>Plan & billing</CardTitle>
+            </div>
+          </CardHeader>
+          <p className="mb-4 text-sm text-zinc-500">
+            You're on the <span className="font-semibold text-zinc-900 dark:text-zinc-100">{current.name}</span> plan.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {PLANS.map((plan) => {
+              const active = plan.id === current.id;
+              return (
+                <div
+                  key={plan.id}
+                  className={`flex flex-col rounded-xl border p-4 ${
+                    active
+                      ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30"
+                      : "border-zinc-200 dark:border-zinc-700"
+                  } ${plan.recommended ? "ring-1 ring-amber-400" : ""}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-zinc-900 dark:text-zinc-100">{plan.name}</p>
+                    {plan.recommended && (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                        Popular
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-lg font-bold text-zinc-900 dark:text-zinc-100">{formatPrice(plan)}</p>
+                  <ul className="mt-3 flex-1 space-y-1.5">
+                    {plan.highlights.map((h) => (
+                      <li key={h} className="flex items-start gap-1.5 text-xs text-zinc-600 dark:text-zinc-300">
+                        <Check size={13} className="mt-0.5 shrink-0 text-emerald-500" />
+                        {h}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-4">
+                    {active ? (
+                      <Button variant="secondary" size="sm" className="w-full" disabled>
+                        Current plan
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        className="w-full"
+                        variant={plan.id === "premium" ? "primary" : "outline"}
+                        loading={upgrading === plan.id}
+                        onClick={() => startUpgrade(plan.id)}
+                      >
+                        {current.id === "free" ? "Upgrade" : "Switch plan"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {planNotice && <p className="mt-3 text-sm text-emerald-600 dark:text-emerald-400">{planNotice}</p>}
+        </Card>
       </div>
 
       <form onSubmit={saveDetails} className="space-y-4">

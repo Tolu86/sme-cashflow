@@ -43,7 +43,7 @@ export default function DashboardPage() {
 
   if (transactions.length === 0) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" data-tour="dashboard">
         <EmptyState
           icon={<Bot size={28} />}
           title="Welcome to Cashflow Copilot"
@@ -69,7 +69,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-tour="dashboard">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Cash flow at a glance</h1>

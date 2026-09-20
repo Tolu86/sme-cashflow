@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Camera } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
@@ -40,6 +40,9 @@ export function TransactionRow({ transaction, currency }: { transaction: Transac
           {meta.label !== "Transfer" && ` · ${meta.label}`}
         </p>
       </div>
+      {transaction.screenshotUrl && (
+        <Camera size={15} className="shrink-0 text-zinc-400" aria-label="Has receipt screenshot" />
+      )}
       <p
         className={cn(
           "shrink-0 text-sm font-semibold tabular-nums",

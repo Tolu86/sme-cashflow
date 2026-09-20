@@ -8,6 +8,7 @@ import { BusinessProvider } from "@/components/providers/business-provider";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
+import { OnboardingTour } from "@/components/onboarding/tour";
 import { SetupGuide } from "@/components/setup/setup-guide";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -54,6 +55,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
+
+      <OnboardingTour />
     </BusinessProvider>
   );
 }

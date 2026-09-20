@@ -31,6 +31,7 @@ export function defaultProfile(uid: string, email: string, displayName?: string)
     currency: "USD",
     lowBalanceThreshold: DEFAULT_LOW_BALANCE_THRESHOLD,
     businessId: null,
+    tourCompleted: false,
     createdAt: Date.now(),
   };
 }

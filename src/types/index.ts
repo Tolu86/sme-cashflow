@@ -5,6 +5,7 @@ export type Frequency = "daily" | "weekly" | "biweekly" | "monthly" | "quarterly
 export type AlertType = "lowBalance" | "upcomingBill" | "cashCrunch" | "anomaly";
 export type AlertSeverity = "info" | "warning" | "critical";
 export type VendorKind = "customer" | "supplier";
+export type PlanId = "free" | "pro" | "premium" | null;
 
 export interface Business {
   id: string;
@@ -12,6 +13,8 @@ export interface Business {
   ownerId: string;
   currency: string;
   createdAt: number;
+  plan?: PlanId;
+  planUpdatedAt?: number;
 }
 
 export interface Account {
@@ -57,6 +60,8 @@ export interface Transaction {
   importBatchId?: string;
   autoCategorized: boolean;
   recurringId?: string;
+  screenshotUrl?: string;
+  screenshotPath?: string;
 }
 
 export interface RecurringRule {
@@ -101,6 +106,7 @@ export interface UserProfile {
   currency: string;
   lowBalanceThreshold: number;
   businessId: string | null;
+  tourCompleted?: boolean;
   createdAt: number;
 }
 
