@@ -8,6 +8,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
 import { CashflowChart } from "@/components/dashboard/cashflow-chart";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
+import { motion } from "framer-motion";
 import { AlertsPanel } from "@/components/dashboard/alerts-panel";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState, LoadingScreen } from "@/components/ui/empty-state";
@@ -69,7 +70,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6" data-tour="dashboard">
+    <motion.div
+      className="space-y-6"
+      data-tour="dashboard"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Cash flow at a glance</h1>
@@ -127,6 +134,6 @@ export default function DashboardPage() {
       </div>
 
       <RecentTransactions transactions={transactions} currency={currency} />
-    </div>
+    </motion.div>
   );
 }
