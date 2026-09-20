@@ -16,6 +16,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { motion } from "framer-motion";
 import { useBusiness } from "@/components/providers/business-provider";
 import { can, type PlanFeature } from "@/lib/plans";
 import type { AccountType } from "@/types";
@@ -54,29 +55,40 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </Link>
 
-      <nav className="flex-1 space-y-1 px-3 py-2">
-        {visible.map((item) => {
+      <motion.nav
+        className="flex-1 space-y-1 px-3 py-2"
+        initial={{ opacity: 0, x: -6 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
+        {visible.map((item, idx) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
           return (
-            <Link
+            <motion.div
               key={item.href}
-              href={item.href}
-              data-tour={`nav-${item.href}`}
-              onClick={onNavigate}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                active
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-              )}
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.28, delay: 0.05 * idx, ease: "easeOut" }}
             >
-              <Icon size={18} />
-              {item.label}
-            </Link>
+              <Link
+                href={item.href}
+                data-tour={`nav-${item.href}`}
+                onClick={onNavigate}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  active
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                )}
+              >
+                <Icon size={18} />
+                {item.label}
+              </Link>
+            </motion.div>
           );
         })}
-      </nav>
+      </motion.nav>
 
       <div className="border-t border-zinc-200 px-3 py-3 dark:border-zinc-800">
         <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
