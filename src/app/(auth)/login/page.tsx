@@ -9,7 +9,7 @@ import { auth } from "@/lib/firebase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -71,7 +71,9 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500 text-white">
-            <Sparkles size={24} />
+            <svg viewBox="0 0 48 48" className="h-8 w-8" aria-hidden="true">
+              <text x="24" y="29" textAnchor="middle" fontSize="27" fontWeight="700" fill="#fff" fontFamily="ui-sans-serif, system-ui">C</text>
+          </svg>
           </div>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Welcome back</h1>
           <p className="mt-1 text-sm text-zinc-500">Sign in to your cash flow workspace</p>
