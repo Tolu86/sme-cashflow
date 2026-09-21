@@ -20,6 +20,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { useBusiness } from "@/components/providers/business-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface TourStep {
   id: string;
@@ -241,8 +242,25 @@ export function OnboardingTour() {
           <span className="sr-only">{isLast ? "Finish tour" : "Skip tour"}</span>
         </div>
 
-        <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">{step.title}</h3>
-        <p className="mt-1 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">{step.body}</p>
+        <motion.div
+          key={step.id}
+          initial={{ opacity: 0, y: 6, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.22, ease: "easeOut" }}
+        >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={step.id}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+          >
+            <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">{step.title}</h3>
+            <p className="mt-1 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">{step.body}</p>
+          </motion.div>
+        </AnimatePresence>
+        </motion.div>
 
         <div className="mt-5 flex items-center justify-between">
           <div className="flex gap-1.5">
