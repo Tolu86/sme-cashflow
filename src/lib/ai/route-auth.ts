@@ -1,5 +1,6 @@
 import "server-only";
 import { verifyIdToken, getAdminDb } from "@/lib/firebase/admin";
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export async function verifyRequest(req: Request, businessId?: string): Promise<{ uid: string }> {
   const authHeader = req.headers.get("authorization");
@@ -8,8 +9,15 @@ export async function verifyRequest(req: Request, businessId?: string): Promise<
   let decoded;
   try {
     decoded = await verifyIdToken(token);
-  } catch {
-    throw new AuthError(401, "Your session expired. Please sign in again.");
+  } catch (firstErr) {
+    await sleep(1200);
+    try {
+      decoded = await verifyIdToken(token);
+    } catch (secondErr) {
+      const code = (secondErr as { code?: string } | undefined)?.code ?? "unknown";
+      console.error(`[route-auth] verifyIdToken failed twice (code=${code})`);
+      throw new AuthError(401, "Your session expired. Please sign in again.");
+    }
   }
   if (businessId) {
     const db = getAdminDb();
