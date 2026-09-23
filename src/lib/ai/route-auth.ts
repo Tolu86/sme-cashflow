@@ -9,7 +9,7 @@ export async function verifyRequest(req: Request, businessId?: string): Promise<
   try {
     decoded = await verifyIdToken(token);
   } catch {
-    throw new AuthError(401, "Invalid or expired token.");
+    throw new AuthError(401, "Your session expired. Please sign in again.");
   }
   if (businessId) {
     const db = getAdminDb();

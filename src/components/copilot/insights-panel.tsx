@@ -32,7 +32,7 @@ export function InsightsPanel() {
       if (!business?.id) return;
       setLoading(true);
       try {
-        const token = await getIdToken(auth!.currentUser!);
+        const token = await getIdToken(auth!.currentUser!, true);
         const res = await fetch("/api/ai/analyze", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },

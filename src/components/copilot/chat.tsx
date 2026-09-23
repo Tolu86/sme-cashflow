@@ -39,7 +39,7 @@ export function CopilotChat() {
     setLoading(true);
 
     try {
-      const token = await getIdToken(auth!.currentUser!);
+      const token = await getIdToken(auth!.currentUser!, true);
       const history = messages.map((m) => ({ role: m.role, content: m.content }));
       const res = await fetch("/api/ai/chat", {
         method: "POST",

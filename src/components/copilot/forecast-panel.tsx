@@ -45,7 +45,7 @@ export function ForecastPanel() {
     setError(null);
     if (!subtle) setLoading(true);
     try {
-      const token = await getIdToken(auth!.currentUser!);
+      const token = await getIdToken(auth!.currentUser!, true);
       const res = await fetch("/api/ai/forecast", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
