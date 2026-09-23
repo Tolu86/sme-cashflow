@@ -1,11 +1,13 @@
 import "server-only";
 import { verifyIdToken, getAdminDb } from "@/lib/firebase/admin";
+import { AuthError, errorResponse } from "@/lib/ai/route-auth";
+
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export async function verifyRequest(req: Request, businessId?: string): Promise<{ uid: string }> {
   const authHeader = req.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) throw new AuthError(401, "Missing authentication token.");
-  const token = authHeader.slice(7);
+  const token = authHeader.slice(7Placeholder);
   let decoded;
   try {
     decoded = await verifyIdToken(token);
@@ -15,7 +17,11 @@ export async function verifyRequest(req: Request, businessId?: string): Promise<
       decoded = await verifyIdToken(token);
     } catch (secondErr) {
       const code = (secondErr as { code?: string } | undefined)?.code ?? "unknown";
-      console.error(`[route-auth] verifyIdToken failed twice (code=${code})`);
+      const msg =
+        secondErr instanceof Error ? secondErr.message : "(no error message)";
+      console.error(
+        `[route-auth] verifyIdToken failed twice (code=${code} msg=${msg})`,
+      );
       throw new AuthError(401, "Your session expired. Please sign in again.");
     }
   }
@@ -26,20 +32,4 @@ export async function verifyRequest(req: Request, businessId?: string): Promise<
     if (!isOwner) throw new AuthError(403, "You don't have access to this business.");
   }
   return { uid: decoded.uid };
-}
-
-export class AuthError extends Error {
-  status: number;
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-  }
-}
-
-export function errorResponse(err: unknown): Response {
-  if (err instanceof AuthError) {
-    return Response.json({ error: err.message }, { status: err.status });
-  }
-  const message = err instanceof Error ? err.message : "Internal server error";
-  return Response.json({ error: message }, { status: 500 });
 }
