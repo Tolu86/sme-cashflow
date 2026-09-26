@@ -43,7 +43,7 @@ export default function SettingsPage() {
       (async () => {
         try {
           const token = await user.getIdToken();
-          const res = await fetch("/api/payments/verify", {
+          const res = await fetch("/api/paystack/verify", {
             method: "POST",
             headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
             body: JSON.stringify({ reference, businessId: business.id, plan }),
@@ -102,7 +102,7 @@ export default function SettingsPage() {
     setPlanNotice(null);
     try {
       const token = await user.getIdToken();
-      const res = await fetch("/api/payments/init", {
+      const res = await fetch("/api/paystack/init", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ businessId: business.id, plan }),

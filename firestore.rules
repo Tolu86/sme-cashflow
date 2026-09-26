@@ -1,34 +1,126 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ---------------------------------------------------------
+    // Authentication helpers
+    // ---------------------------------------------------------
 
     function signedIn() {
       return request.auth != null;
     }
 
     function ownsBusiness(businessId) {
-      return get(/databases/$(database)/documents/businesses/$(businessId)).data.ownerId == request.auth.uid;
+      return signedIn()
+        && get(
+          /databases/$(database)/documents/businesses/$(businessId)
+        ).data.ownerId == request.auth.uid;
     }
 
     function isMember(businessId) {
-      let biz = get(/databases/$(database)/documents/businesses/$(businessId)).data;
-      return biz.ownerId == request.auth.uid || biz.members in request.auth.token ? biz.members.hasAny([request.auth.uid]) : false;
+      let biz =
+        get(
+          /databases/$(database)/documents/businesses/$(businessId)
+        ).data;
+
+      return signedIn()
+        && (
+          biz.ownerId == request.auth.uid
+          ||
+          (
+            biz.members != null
+            && biz.members.hasAny([request.auth.uid])
+          )
+        );
     }
 
-    // Users can only read/write their own profile
+    // ---------------------------------------------------------
+    // Users
+    // ---------------------------------------------------------
+
     match /users/{uid} {
-      allow read, write: if signedIn() && request.auth.uid == uid;
+      allow read, write:
+        if signedIn()
+        && request.auth.uid == uid;
     }
 
+    // ---------------------------------------------------------
     // Businesses
-    match /businesses/{businessId} {
-      allow read, create: if ownsBusiness(businessId) || request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if ownsBusiness(businessId);
+    // ---------------------------------------------------------
 
-      // Sub-collections are guarded by business ownership / membership + auth context
+    match /businesses/{businessId} {
+
+      // Create business
+      allow create:
+        if signedIn()
+        && request.resource.data.ownerId == request.auth.uid;
+
+      // Read business
+      allow read:
+        if ownsBusiness(businessId)
+        || isMember(businessId);
+
+      // Update business
+      //
+      // Users can update normal business fields, but CANNOT
+      // change billing/subscription fields from the client.
+      allow update:
+        if ownsBusiness(businessId)
+        && request.resource.data.plan == resource.data.plan
+        && request.resource.data.planUpdatedAt == resource.data.planUpdatedAt
+        && request.resource.data.planSource == resource.data.planSource;
+
+      // Delete business
+      allow delete:
+        if ownsBusiness(businessId);
+
+      // -------------------------------------------------------
+      // Business subcollections
+      // -------------------------------------------------------
+
       match /{document=**} {
-        allow read, write: if signedIn() && (ownsBusiness(businessId) || isMember(businessId));
+        allow read, write:
+          if signedIn()
+          && (
+            ownsBusiness(businessId)
+            || isMember(businessId)
+          );
       }
+    }
+
+    // ---------------------------------------------------------
+    // Payment transactions
+    // -------------------------------------------------------
+    //
+    // IMPORTANT:
+    // Payment records are server-only.
+    //
+    // Your Next.js server using Firebase Admin SDK can read/write
+    // these records. Normal users cannot.
+    //
+
+    match /paymentTransactions/{reference} {
+      allow read, write: if false;
+    }
+
+    // ---------------------------------------------------------
+    // Subscriptions
+    // -------------------------------------------------------
+    //
+    // These will also be controlled exclusively by the server.
+    //
+
+    match /subscriptions/{subscriptionId} {
+      allow read, write: if false;
+    }
+
+    // ---------------------------------------------------------
+    // Everything else
+    // ---------------------------------------------------------
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
