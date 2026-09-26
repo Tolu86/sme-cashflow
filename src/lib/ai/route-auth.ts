@@ -14,9 +14,35 @@ export async function verifyRequest(req: Request, businessId?: string): Promise<
     try {
       decoded = await verifyIdToken(token);
     } catch (secondErr) {
-      const code = (secondErr as { code?: string } | undefined)?.code ?? "unknown";
-      console.error(`[route-auth] verifyIdToken failed twice (code=${code})`);
-      throw new AuthError(401, "Your session expired. Please sign in again.");
+      const code =
+  (secondErr as { code?: string } | undefined)?.code ??
+  "unknown";
+
+const errorName =
+  secondErr instanceof Error
+    ? secondErr.name
+    : typeof secondErr;
+
+const errorMessage =
+  secondErr instanceof Error
+    ? secondErr.message
+    : "No error message available";
+
+// Do not log tokens, credentials or full error objects.
+const safeMessage = errorMessage
+  .replace(/-----BEGIN [\s\S]*?-----END [^-]+-----/g, "[REDACTED]")
+  .replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]")
+  .replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, "[REDACTED]")
+  .slice(0, 300);
+
+console.error(
+  `[route-auth] Firebase verification failed: code=${code}, name=${errorName}, message=${safeMessage}`
+);
+
+throw new AuthError(
+  401,
+  "Authentication failed. Please sign in again."
+);
     }
   }
   if (businessId) {

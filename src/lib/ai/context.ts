@@ -1,4 +1,5 @@
 import "server-only";
+import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { toMajor } from "@/lib/money";
 import { todayISO } from "@/lib/dates";
@@ -49,14 +50,14 @@ export async function buildAiContext(businessId: string): Promise<AiContext> {
   const business = businessDoc.data() as { name: string; currency: string };
 
   const accountsSnap = await db.collection(`businesses/${businessId}/accounts`).orderBy("createdAt", "asc").get();
-  const accounts = accountsSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as { id: string; openingBalance: number });
+  const accounts = accountsSnap.docs.map((d: QueryDocumentSnapshot) => ({ id: d.id, ...d.data() }) as { id: string; openingBalance: number });
 
   const categoriesSnap = await db.collection(`businesses/${businessId}/categories`).get();
   const categoryNames = new Map<string, string>();
   for (const d of categoriesSnap.docs) categoryNames.set(d.id, (d.data().name as string) ?? "Uncategorized");
 
   const txsSnap = await db.collection(`businesses/${businessId}/transactions`).orderBy("date", "asc").limit(5000).get();
-  const transactions: Tx[] = txsSnap.docs.map((d) => {
+  const transactions: Tx[] = txsSnap.docs.map((d: QueryDocumentSnapshot) => {
     const x = d.data();
     return {
       id: d.id,
@@ -70,7 +71,7 @@ export async function buildAiContext(businessId: string): Promise<AiContext> {
   });
 
   const recurringSnap = await db.collection(`businesses/${businessId}/recurring`).where("active", "==", true).get();
-  const recurringItems = recurringSnap.docs.map((d) => {
+  const recurringItems = recurringSnap.docs.map((d: QueryDocumentSnapshot) => {
     const x = d.data();
     return {
       id: d.id,
@@ -125,7 +126,13 @@ export async function buildAiContext(businessId: string): Promise<AiContext> {
     net30d: toMajor(summary.net),
     categoryTotals: [...categoryTotals.values()].map((c) => ({ ...c, total: toMajor(c.total) })),
     recentTransactions: recent,
-    recurring: recurringItems.map((r) => ({ label: r.label, frequency: r.frequency, amount: toMajor(r.amount), type: r.type, nextDue: r.nextDueDate })),
+    recurring: recurringItems.map((r: {
+  label: string;
+  frequency: Frequency;
+  amount: number;
+  type: "income" | "expense";
+  nextDueDate: string;
+}) => ({ label: r.label, frequency: r.frequency, amount: toMajor(r.amount), type: r.type, nextDue: r.nextDueDate })),
     forecast30d: forecast.map((f) => ({ date: f.date, balance: toMajor(f.projectedBalance) })),
     anomalies,
     monthly: buildMonthly(transactions),
