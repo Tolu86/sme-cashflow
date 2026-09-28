@@ -1,7 +1,15 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { UploadCloud, Wand2, Check, X, FileSpreadsheet, Loader2 } from "lucide-react";
+import {
+  UploadCloud,
+  Wand2,
+  Check,
+  X,
+  FileSpreadsheet,
+  Loader2,
+  Lock,
+} from "lucide-react";
 import { getIdToken } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 import { useBusiness } from "@/components/providers/business-provider";
@@ -165,7 +173,13 @@ export default function ImportPage() {
 
   if (loading || !business) return <LoadingScreen label="Loading importer..." />;
 
-  const includedCount = rows.filter((r) => r.include).length;
+  const includedCount = rows.filter(
+  (r) => r.include
+).length;
+
+const isPro =
+  business.plan === "pro" ||
+  business.plan === "premium";
 
   return (
     <div className="space-y-6">
@@ -230,10 +244,27 @@ export default function ImportPage() {
               <Button variant="secondary" size="sm" onClick={() => setRows((prev) => prev.map((r) => ({ ...r, include: !r.include })))}>
                 Toggle all
               </Button>
-              <Button size="sm" onClick={runCategorize} loading={categorizing}>
-                <Wand2 size={14} />
-                Auto-categorize
-              </Button>
+              {isPro ? (
+                <Button
+                  size="sm"
+                  onClick={runCategorize}
+                  loading={categorizing}
+                >
+                  <Wand2 size={14} />
+                  Auto-categorize
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                  window.location.href = "/settings";
+                  }}
+                >
+                  <Lock size={14} />
+                  Upgrade to Pro
+                </Button>
+            )}
             </div>
             <div className="flex items-center gap-2">
               <Select

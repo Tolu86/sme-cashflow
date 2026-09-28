@@ -7,6 +7,9 @@ export const maxDuration = 30;
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 const PAYSTACK_BASE = "https://api.paystack.co";
 
+const PAYSTACK_PRO_PLAN_CODE = "PLN_u3cfv54cgum96k3";
+const PRO_AMOUNT = 300_000;
+
 const PLAN_IDS = new Set(["pro"]);
 
 export async function POST(req: Request) {
@@ -17,7 +20,9 @@ export async function POST(req: Request) {
 
     if (!PAYSTACK_SECRET) {
       return Response.json(
-        { error: "Payment gateway is not configured." },
+        {
+          error: "Payment gateway is not configured.",
+        },
         { status: 503 }
       );
     }
@@ -33,7 +38,10 @@ export async function POST(req: Request) {
 
     if (!body.reference || !body.businessId) {
       return Response.json(
-        { error: "Reference and business ID are required." },
+        {
+          error:
+            "Reference and business ID are required.",
+        },
         { status: 400 }
       );
     }
@@ -42,11 +50,15 @@ export async function POST(req: Request) {
     // 3. Authenticate the user
     // ---------------------------------------------------------
 
-    const authHeader = req.headers.get("authorization");
+    const authHeader =
+      req.headers.get("authorization");
 
     if (!authHeader?.startsWith("Bearer ")) {
       return Response.json(
-        { error: "Missing authentication token." },
+        {
+          error:
+            "Missing authentication token.",
+        },
         { status: 401 }
       );
     }
@@ -54,10 +66,15 @@ export async function POST(req: Request) {
     let decoded;
 
     try {
-      decoded = await verifyIdToken(authHeader.slice(7));
+      decoded = await verifyIdToken(
+        authHeader.slice(7)
+      );
     } catch {
       return Response.json(
-        { error: "Invalid or expired token." },
+        {
+          error:
+            "Invalid or expired token.",
+        },
         { status: 401 }
       );
     }
@@ -68,46 +85,62 @@ export async function POST(req: Request) {
     // 4. Verify business ownership
     // ---------------------------------------------------------
 
-    const bizRef = db.doc(`businesses/${body.businessId}`);
+    const bizRef = db.doc(
+      `businesses/${body.businessId}`
+    );
+
     const bizSnap = await bizRef.get();
     const biz = bizSnap.data();
 
     if (!biz || biz.ownerId !== decoded.uid) {
       return Response.json(
-        { error: "You don't have access to this business." },
+        {
+          error:
+            "You don't have access to this business.",
+        },
         { status: 403 }
       );
     }
 
     // ---------------------------------------------------------
-    // 5. Find our pending payment
+    // 5. Find our payment transaction
     // ---------------------------------------------------------
 
     const paymentRef = db.doc(
       `paymentTransactions/${body.reference}`
     );
 
-    const paymentSnap = await paymentRef.get();
+    const paymentSnap =
+      await paymentRef.get();
 
     if (!paymentSnap.exists) {
       return Response.json(
-        { error: "Payment transaction not found." },
+        {
+          error:
+            "Payment transaction not found.",
+        },
         { status: 404 }
       );
     }
 
-    const payment = paymentSnap.data();
+    const payment =
+      paymentSnap.data();
 
     // ---------------------------------------------------------
-    // 6. Make sure this payment belongs to this user/business
+    // 6. Make sure payment belongs to this
+    //    user and business
     // ---------------------------------------------------------
 
     if (
       payment?.userId !== decoded.uid ||
-      payment?.businessId !== body.businessId
+      payment?.businessId !==
+        body.businessId
     ) {
       return Response.json(
-        { error: "Payment ownership mismatch." },
+        {
+          error:
+            "Payment ownership mismatch.",
+        },
         { status: 403 }
       );
     }
@@ -116,11 +149,17 @@ export async function POST(req: Request) {
     // 7. Only Pro is currently purchasable
     // ---------------------------------------------------------
 
-    const plan = payment?.plan as string | undefined;
+    const plan =
+      payment?.plan as
+        | string
+        | undefined;
 
     if (!plan || !PLAN_IDS.has(plan)) {
       return Response.json(
-        { error: "Invalid payment plan." },
+        {
+          error:
+            "Invalid payment plan.",
+        },
         { status: 400 }
       );
     }
@@ -141,33 +180,58 @@ export async function POST(req: Request) {
     // 9. Verify transaction directly with Paystack
     // ---------------------------------------------------------
 
-    const paystackResponse = await fetch(
-      `${PAYSTACK_BASE}/transaction/verify/${encodeURIComponent(
-        body.reference
-      )}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${PAYSTACK_SECRET}`,
-        },
-      }
-    );
+    const paystackResponse =
+      await fetch(
+        `${PAYSTACK_BASE}/transaction/verify/${encodeURIComponent(
+          body.reference
+        )}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization:
+              `Bearer ${PAYSTACK_SECRET}`,
+          },
+        }
+      );
 
-    const paystackData = (await paystackResponse.json()) as {
-      status?: boolean;
-      message?: string;
-      data?: {
-        status?: string;
-        reference?: string;
-        amount?: number;
-        currency?: string;
-        metadata?: {
-          business_id?: string;
-          user_id?: string;
-          plan?: string;
+    const paystackData =
+      (await paystackResponse.json()) as {
+        status?: boolean;
+        message?: string;
+
+        data?: {
+          status?: string;
+          reference?: string;
+          amount?: number;
+          currency?: string;
+
+          plan?: {
+            plan_code?: string;
+          } | null;
+
+          plan_object?: {
+            plan_code?: string;
+          } | null;
+
+          customer?: {
+            customer_code?: string;
+            email?: string;
+          } | null;
+
+          subscription?: {
+            subscription_code?: string;
+            status?: string;
+            next_payment_date?: string;
+            email_token?: string;
+          } | null;
+
+          metadata?: {
+            business_id?: string;
+            user_id?: string;
+            plan?: string;
+          };
         };
       };
-    };
 
     // ---------------------------------------------------------
     // 10. Check Paystack response
@@ -188,17 +252,24 @@ export async function POST(req: Request) {
       );
     }
 
-    const transaction = paystackData.data;
+    const transaction =
+      paystackData.data;
 
     // ---------------------------------------------------------
     // 11. Payment must actually be successful
     // ---------------------------------------------------------
 
-    if (transaction.status !== "success") {
+    if (
+      transaction.status !==
+      "success"
+    ) {
       return Response.json(
         {
-          error: "Payment has not been completed.",
-          status: transaction.status ?? "unknown",
+          error:
+            "Payment has not been completed.",
+          status:
+            transaction.status ??
+            "unknown",
         },
         { status: 402 }
       );
@@ -208,35 +279,73 @@ export async function POST(req: Request) {
     // 12. Verify Paystack reference
     // ---------------------------------------------------------
 
-    if (transaction.reference !== body.reference) {
+    if (
+      transaction.reference !==
+      body.reference
+    ) {
       return Response.json(
-        { error: "Transaction reference mismatch." },
+        {
+          error:
+            "Transaction reference mismatch.",
+        },
         { status: 400 }
       );
     }
 
     // ---------------------------------------------------------
-    // 13. Verify metadata
+    // 13. Verify Paystack plan
     // ---------------------------------------------------------
 
-    const metadata = transaction.metadata;
+    const paystackPlanCode =
+      transaction.plan?.plan_code ??
+      transaction.plan_object
+        ?.plan_code;
+
+    if (
+      paystackPlanCode &&
+      paystackPlanCode !==
+        PAYSTACK_PRO_PLAN_CODE
+    ) {
+      return Response.json(
+        {
+          error:
+            "Paystack plan mismatch.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // ---------------------------------------------------------
+    // 14. Verify metadata
+    // ---------------------------------------------------------
+
+    const metadata =
+      transaction.metadata;
 
     if (
       metadata?.business_id &&
-      metadata.business_id !== body.businessId
+      metadata.business_id !==
+        body.businessId
     ) {
       return Response.json(
-        { error: "Payment business mismatch." },
+        {
+          error:
+            "Payment business mismatch.",
+        },
         { status: 400 }
       );
     }
 
     if (
       metadata?.user_id &&
-      metadata.user_id !== decoded.uid
+      metadata.user_id !==
+        decoded.uid
     ) {
       return Response.json(
-        { error: "Payment user mismatch." },
+        {
+          error:
+            "Payment user mismatch.",
+        },
         { status: 400 }
       );
     }
@@ -246,83 +355,247 @@ export async function POST(req: Request) {
       metadata.plan !== plan
     ) {
       return Response.json(
-        { error: "Payment plan mismatch." },
+        {
+          error:
+            "Payment plan mismatch.",
+        },
         { status: 400 }
       );
     }
 
     // ---------------------------------------------------------
-    // 14. Verify amount
+    // 15. Verify amount
     // ---------------------------------------------------------
 
-    const expectedAmount = payment?.amount;
+    const expectedAmount =
+      payment?.amount;
 
     if (
-      typeof expectedAmount !== "number" ||
-      transaction.amount !== expectedAmount
+      typeof expectedAmount !==
+        "number" ||
+      expectedAmount !==
+        PRO_AMOUNT ||
+      transaction.amount !==
+        expectedAmount
     ) {
       return Response.json(
-        { error: "Payment amount mismatch." },
+        {
+          error:
+            "Payment amount mismatch.",
+        },
         { status: 400 }
       );
     }
 
     // ---------------------------------------------------------
-    // 15. Verify currency
+    // 16. Verify currency
     // ---------------------------------------------------------
 
-    if (transaction.currency !== "NGN") {
+    if (
+      transaction.currency !==
+      "NGN"
+    ) {
       return Response.json(
-        { error: "Payment currency mismatch." },
+        {
+          error:
+            "Payment currency mismatch.",
+        },
         { status: 400 }
       );
     }
 
     // ---------------------------------------------------------
-    // 16. Activate Pro
+    // 17. Prepare subscription information
     // ---------------------------------------------------------
+
+    const subscription =
+      transaction.subscription;
+
+    const subscriptionCode =
+      subscription
+        ?.subscription_code ??
+      null;
+
+    const customerCode =
+      transaction.customer
+        ?.customer_code ??
+      null;
+
+    const customerEmail =
+      transaction.customer
+        ?.email ??
+      null;
+
+    const subscriptionStatus =
+      subscription?.status ??
+      "active";
+
+    const nextPaymentDate =
+      subscription
+        ?.next_payment_date ??
+      null;
+
+    const emailToken =
+      subscription
+        ?.email_token ??
+      null;
 
     const now = Date.now();
 
-    await db.runTransaction(async (tx) => {
-      const freshPaymentSnap = await tx.get(paymentRef);
+    // ---------------------------------------------------------
+    // 18. Activate Pro + save payment + subscription
+    // ---------------------------------------------------------
 
-      if (freshPaymentSnap.exists) {
-        const freshPayment = freshPaymentSnap.data();
+    await db.runTransaction(
+      async (tx) => {
+        const freshPaymentSnap =
+          await tx.get(
+            paymentRef
+          );
 
-        // Another request/webhook may have processed it already.
-        if (freshPayment?.status === "paid") {
+        if (
+          !freshPaymentSnap.exists
+        ) {
+          throw new Error(
+            "Payment transaction no longer exists."
+          );
+        }
+
+        const freshPayment =
+          freshPaymentSnap.data();
+
+        // Another request or webhook
+        // may have processed it already.
+        if (
+          freshPayment?.status ===
+          "paid"
+        ) {
           return;
         }
+
+        // -----------------------------------------------------
+        // Mark payment as paid
+        // -----------------------------------------------------
+
+        tx.update(paymentRef, {
+          status: "paid",
+
+          verifiedAt: now,
+
+          paystackStatus:
+            transaction.status,
+
+          paystackAmount:
+            transaction.amount,
+
+          paystackCurrency:
+            transaction.currency,
+
+          paystackReference:
+            body.reference,
+
+          customerCode,
+
+          customerEmail,
+
+          subscriptionCode,
+
+          subscriptionStatus,
+
+          nextPaymentDate,
+
+          emailToken,
+
+          paidAt: now,
+
+          updatedAt: now,
+        });
+
+        // -----------------------------------------------------
+        // Activate Pro
+        // -----------------------------------------------------
+
+        tx.update(bizRef, {
+          plan: "pro",
+          planUpdatedAt: now,
+          planSource:
+            `paystack:${body.reference}`,
+        });
+
+        // -----------------------------------------------------
+        // Save subscription if Paystack returned one
+        // -----------------------------------------------------
+
+        if (subscriptionCode) {
+          const subscriptionRef =
+            db.doc(
+              `subscriptions/${body.businessId}`
+            );
+
+          tx.set(
+            subscriptionRef,
+            {
+              businessId:
+                body.businessId,
+
+              userId:
+                decoded.uid,
+
+              plan: "pro",
+
+              paystackPlanCode:
+                PAYSTACK_PRO_PLAN_CODE,
+
+              subscriptionCode,
+
+              customerCode,
+
+              customerEmail,
+
+              status:
+                subscriptionStatus,
+
+              nextPaymentDate,
+
+              emailToken,
+
+              createdAt: now,
+
+              updatedAt: now,
+            },
+            {
+              merge: true,
+            }
+          );
+        }
       }
-
-      tx.update(paymentRef, {
-        status: "paid",
-        verifiedAt: now,
-        paystackStatus: transaction.status,
-        paystackAmount: transaction.amount,
-        paystackCurrency: transaction.currency,
-        updatedAt: now,
-      });
-
-      tx.update(bizRef, {
-        plan: "pro",
-        planUpdatedAt: now,
-        planSource: `paystack:${body.reference}`,
-      });
-    });
+    );
 
     // ---------------------------------------------------------
-    // 17. Return success
+    // 19. Return success
     // ---------------------------------------------------------
 
     return Response.json({
       ok: true,
       plan: "pro",
-      reference: body.reference,
+      reference:
+        body.reference,
+
+      subscription:
+        subscriptionCode
+          ? {
+              subscriptionCode,
+              status:
+                subscriptionStatus,
+              nextPaymentDate,
+            }
+          : null,
     });
   } catch (err) {
-    console.error("Paystack verification error:", err);
+    console.error(
+      "Paystack verification error:",
+      err
+    );
 
     const message =
       err instanceof Error
@@ -330,7 +603,9 @@ export async function POST(req: Request) {
         : "Internal server error";
 
     return Response.json(
-      { error: message },
+      {
+        error: message,
+      },
       { status: 500 }
     );
   }

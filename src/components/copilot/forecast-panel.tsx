@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -35,27 +36,52 @@ export function ForecastPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isPro =
+    business?.plan === "pro" || business?.plan === "premium";
+
   useEffect(() => {
+    if (!isPro) return;
+
     load(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [business?.id, isPro]);
 
   async function load(subtle: boolean) {
-    if (!business?.id) return;
+    if (!business?.id || !isPro) return;
+
     setError(null);
-    if (!subtle) setLoading(true);
+
+    if (!subtle) {
+      setLoading(true);
+    }
+
     try {
       const token = await getIdToken(auth!.currentUser!, true);
+
       const res = await fetch("/api/ai/forecast", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ businessId: business.id }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          businessId: business.id,
+        }),
       });
+
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Request failed");
+
+      if (!res.ok) {
+        throw new Error(json.error ?? "Request failed");
+      }
+
       setData(json);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load forecast.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load forecast."
+      );
     } finally {
       setLoading(false);
     }
@@ -63,17 +89,83 @@ export function ForecastPanel() {
 
   const chartData = useMemo(() => {
     const local = buildForecast(accounts, transactions, recurring, 30);
-    return local.map((p) => ({ date: formatDate(p.date), balance: p.projectedBalance / 100, actual: p.event }));
+
+    return local.map((p) => ({
+      date: formatDate(p.date),
+      balance: p.projectedBalance / 100,
+      actual: p.event,
+    }));
   }, [accounts, transactions, recurring]);
 
-  const localLowest = lowestProjectedBalance(buildForecast(accounts, transactions, recurring, 30));
+  const localLowest = lowestProjectedBalance(
+    buildForecast(accounts, transactions, recurring, 30)
+  );
+
   const currency = business?.currency ?? "USD";
+
+  if (!business) return null;
+
+  if (!isPro) {
+    return (
+      <Card>
+        <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-emerald-600"
+            >
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </div>
+
+          <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+            Forecast is a Pro feature
+          </h3>
+
+          <p className="mt-2 max-w-md text-sm text-zinc-500">
+            Upgrade to Pro to get AI-powered 30-day cash flow forecasts and
+            financial insights.
+          </p>
+
+          <Button
+            className="mt-5"
+            onClick={() => {
+              window.location.href = "/settings";
+            }}
+          >
+            Upgrade to Pro
+          </Button>
+
+          <p className="mt-2 text-xs text-zinc-400">
+            Pro is ₦3,000/month.
+          </p>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">30-day cash flow forecast</h2>
-        <Button variant="secondary" size="sm" onClick={() => load(false)} loading={loading}>
+        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          30-day cash flow forecast
+        </h2>
+
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => load(false)}
+          loading={loading}
+        >
           Regenerate
         </Button>
       </div>
@@ -83,31 +175,96 @@ export function ForecastPanel() {
           <CardHeader>
             <CardTitle>Projected balance by day</CardTitle>
           </CardHeader>
+
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: 5 }}>
+              <AreaChart
+                data={chartData}
+                margin={{ top: 5, right: 5, bottom: 0, left: 5 }}
+              >
                 <defs>
-                  <linearGradient id="proj" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                  <linearGradient
+                    id="proj"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="5%"
+                      stopColor="#0ea5e9"
+                      stopOpacity={0.3}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="#0ea5e9"
+                      stopOpacity={0}
+                    />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-zinc-200 dark:stroke-zinc-700" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#71717a" }} tickFormatter={(v: string) => v.slice(0, 6)} minTickGap={30} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: "#71717a" }} tickFormatter={(v: number) => formatMoney(v, currency).replace(/\.00$/, "")} axisLine={false} tickLine={false} width={70} />
-                <Tooltip
-                  contentStyle={{ background: "#18181b", border: "none", borderRadius: 12, color: "#fff", fontSize: 12 }}
-                  labelStyle={{ color: "#a1a1aa" }}
-                  formatter={(value) => [formatMoney(Number(value) || 0, currency), "Balance"]}
+
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  className="stroke-zinc-200 dark:stroke-zinc-700"
                 />
-                <Area type="monotone" dataKey="balance" stroke="#0ea5e9" strokeWidth={2} fill="url(#proj)" isAnimationActive={false} />
+
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10, fill: "#71717a" }}
+                  tickFormatter={(v: string) => v.slice(0, 6)}
+                  minTickGap={30}
+                  axisLine={false}
+                  tickLine={false}
+                />
+
+                <YAxis
+                  tick={{ fontSize: 10, fill: "#71717a" }}
+                  tickFormatter={(v: number) =>
+                    formatMoney(v, currency).replace(/\.00$/, "")
+                  }
+                  axisLine={false}
+                  tickLine={false}
+                  width={70}
+                />
+
+                <Tooltip
+                  contentStyle={{
+                    background: "#18181b",
+                    border: "none",
+                    borderRadius: 12,
+                    color: "#fff",
+                    fontSize: 12,
+                  }}
+                  labelStyle={{ color: "#a1a1aa" }}
+                  formatter={(value) => [
+                    formatMoney(Number(value) || 0, currency),
+                    "Balance",
+                  ]}
+                />
+
+                <Area
+                  type="monotone"
+                  dataKey="balance"
+                  stroke="#0ea5e9"
+                  strokeWidth={2}
+                  fill="url(#proj)"
+                  isAnimationActive={false}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
+
           <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500">
             {localLowest && (
               <>
-                <span className={cn("font-semibold", localLowest.value < 0 ? "text-red-500" : "text-emerald-500")}>
+                <span
+                  className={cn(
+                    "font-semibold",
+                    localLowest.value < 0
+                      ? "text-red-500"
+                      : "text-emerald-500"
+                  )}
+                >
                   {formatMoney(localLowest.value, currency)}
                 </span>
                 lowest point around {formatDate(localLowest.date)}
@@ -120,16 +277,28 @@ export function ForecastPanel() {
           <CardHeader>
             <CardTitle>AI summary</CardTitle>
           </CardHeader>
+
           {loading && !data ? (
             <div className="flex items-center gap-2 py-8 text-sm text-zinc-500">
-              <Spinner className="h-4 w-4 text-emerald-500" /> Building your forecast...
+              <Spinner className="h-4 w-4 text-emerald-500" />
+              Building your forecast...
             </div>
           ) : error && !data ? (
             <p className="text-sm text-red-500">{error}</p>
           ) : data ? (
-            <div className="prose prose-sm prose-zinc max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: markdownToHtml(data.narrative) }} />
+            <div
+              className="prose prose-sm prose-zinc max-w-none dark:prose-invert"
+              dangerouslySetInnerHTML={{
+                __html: markdownToHtml(data.narrative),
+              }}
+            />
           ) : null}
-          {!data && !loading && !error && <p className="text-sm text-zinc-500">Add transactions to generate a forecast.</p>}
+
+          {!data && !loading && !error && (
+            <p className="text-sm text-zinc-500">
+              Add transactions to generate a forecast.
+            </p>
+          )}
         </Card>
       </div>
     </div>
@@ -142,26 +311,47 @@ function markdownToHtml(md: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-  // bullets
+
   const lines = html.split("\n");
   const out: string[] = [];
   let inList = false;
+
   for (const line of lines) {
     const bullet = /^\s*[-*] (.+)$/.exec(line);
+
     if (bullet) {
       if (!inList) {
         out.push("<ul class='my-2 space-y-1.5 pl-5 list-disc'>");
         inList = true;
       }
-      out.push(`<li>${bullet[1].replace(/`([^`]+)`/g, "<code>$1</code>")}</li>`);
+
+      out.push(
+        `<li>${bullet[1].replace(
+          /`([^`]+)`/g,
+          "<code>$1</code>"
+        )}</li>`
+      );
     } else {
       if (inList) {
         out.push("</ul>");
         inList = false;
       }
-      if (line.trim()) out.push(`<p class='mb-2'>${line.replace(/`([^`]+)`/g, "<code>$1</code>")}</p>`);
+
+      if (line.trim()) {
+        out.push(
+          `<p class='mb-2'>${line.replace(
+            /`([^`]+)`/g,
+            "<code>$1</code>"
+          )}</p>`
+        );
+      }
     }
   }
-  if (inList) out.push("</ul>");
+
+  if (inList) {
+    out.push("</ul>");
+  }
+
   return out.join("\n");
 }
+

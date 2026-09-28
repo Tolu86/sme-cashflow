@@ -1,7 +1,14 @@
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { SendHorizonal, Bot, User, Sparkles } from "lucide-react";
+import {
+  SendHorizonal,
+  Bot,
+  User,
+  Sparkles,
+  Lock,
+} from "lucide-react";
 import { getIdToken } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 import { useBusiness } from "@/components/providers/business-provider";
@@ -27,36 +34,135 @@ export function CopilotChat() {
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const isPro =
+    business?.plan === "pro" ||
+    business?.plan === "premium";
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
   }, [messages, loading]);
 
   async function send(text: string) {
     const trimmed = text.trim();
-    if (!trimmed || !business?.id || loading) return;
+
+    if (
+      !trimmed ||
+      !business?.id ||
+      loading ||
+      !isPro
+    ) {
+      return;
+    }
+
     setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content: trimmed,
+      },
+    ]);
+
     setLoading(true);
 
     try {
-      const token = await getIdToken(auth!.currentUser!, true);
-      const history = messages.map((m) => ({ role: m.role, content: m.content }));
+      const token = await getIdToken(
+        auth!.currentUser!,
+        true
+      );
+
+      const history = messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
       const res = await fetch("/api/ai/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ businessId: business.id, message: trimmed, history }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          businessId: business.id,
+          message: trimmed,
+          history,
+        }),
       });
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Request failed");
-      setMessages((prev) => [...prev, { role: "assistant", content: data.answer }]);
+
+      if (!res.ok) {
+        throw new Error(
+          data.error ?? "Request failed"
+        );
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: data.answer,
+        },
+      ]);
     } catch (err) {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `Sorry, something went wrong: ${err instanceof Error ? err.message : "unknown error"}` },
+        {
+          role: "assistant",
+          content: `Sorry, something went wrong: ${
+            err instanceof Error
+              ? err.message
+              : "unknown error"
+          }`,
+        },
       ]);
     } finally {
       setLoading(false);
     }
+  }
+
+  if (!business) {
+    return null;
+  }
+
+  if (!isPro) {
+    return (
+      <div className="flex min-h-[480px] flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 text-center dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
+          <Lock
+            size={22}
+            className="text-emerald-600"
+          />
+        </div>
+
+        <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          Cashflow Copilot is a Pro feature
+        </h3>
+
+        <p className="mt-2 max-w-md text-sm text-zinc-500">
+          Upgrade to Pro to chat with your AI
+          financial assistant and get personalized
+          answers based on your business data.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => {
+            window.location.href = "/settings";
+          }}
+          className="mt-5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-600"
+        >
+          Upgrade to Pro
+        </button>
+
+        <p className="mt-2 text-xs text-zinc-400">
+          Pro is ₦3,000/month.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -65,20 +171,33 @@ export function CopilotChat() {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-white">
           <Bot size={18} />
         </div>
+
         <div>
-          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Cashflow Copilot</p>
-          <p className="text-xs text-zinc-500">Ask anything about your money</p>
+          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            Cashflow Copilot
+          </p>
+
+          <p className="text-xs text-zinc-500">
+            Ask anything about your money
+          </p>
         </div>
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
         {messages.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center text-center">
-            <Sparkles size={28} className="mb-3 text-emerald-500" />
+            <Sparkles
+              size={28}
+              className="mb-3 text-emerald-500"
+            />
+
             <p className="max-w-sm text-sm text-zinc-500">
-              Hi! I&apos;m your cash flow copilot. I can see your recent transactions, forecast, and
-              recurring bills. Try one of these:
+              Hi! I&apos;m your cash flow copilot. I
+              can see your recent transactions,
+              forecast, and recurring bills. Try one
+              of these:
             </p>
+
             <div className="mt-4 flex max-w-md flex-col gap-2">
               {SUGGESTIONS.map((s) => (
                 <button
@@ -94,7 +213,10 @@ export function CopilotChat() {
         )}
 
         {messages.map((m, i) => (
-          <MessageBubble key={i} msg={m} />
+          <MessageBubble
+            key={i}
+            msg={m}
+          />
         ))}
 
         {loading && (
@@ -103,6 +225,7 @@ export function CopilotChat() {
             Thinking...
           </div>
         )}
+
         <div ref={bottomRef} />
       </div>
 
@@ -119,9 +242,14 @@ export function CopilotChat() {
         >
           <textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) =>
+              setInput(e.target.value)
+            }
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
+              if (
+                e.key === "Enter" &&
+                !e.shiftKey
+              ) {
                 e.preventDefault();
                 send(input);
               }
@@ -130,9 +258,12 @@ export function CopilotChat() {
             placeholder="Ask about your cash flow..."
             className="max-h-32 min-h-8 w-full resize-none bg-transparent py-1 text-sm outline-none placeholder:text-zinc-400"
           />
+
           <button
             type="submit"
-            disabled={loading || !input.trim()}
+            disabled={
+              loading || !input.trim()
+            }
             className="shrink-0 rounded-lg bg-emerald-500 p-2 text-white transition-colors hover:bg-emerald-600 disabled:pointer-events-none disabled:opacity-40"
           >
             <SendHorizonal size={18} />
@@ -143,9 +274,19 @@ export function CopilotChat() {
   );
 }
 
-function MessageBubble({ msg }: { msg: Msg }) {
+function MessageBubble({
+  msg,
+}: {
+  msg: Msg;
+}) {
   return (
-    <div className={cn("flex gap-3", msg.role === "user" && "flex-row-reverse")}>
+    <div
+      className={cn(
+        "flex gap-3",
+        msg.role === "user" &&
+          "flex-row-reverse"
+      )}
+    >
       <div
         className={cn(
           "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
@@ -154,8 +295,13 @@ function MessageBubble({ msg }: { msg: Msg }) {
             : "bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300"
         )}
       >
-        {msg.role === "assistant" ? <Bot size={15} /> : <User size={15} />}
+        {msg.role === "assistant" ? (
+          <Bot size={15} />
+        ) : (
+          <User size={15} />
+        )}
       </div>
+
       <div
         className={cn(
           "max-w-[85%] whitespace-pre-wrap rounded-xl px-4 py-2.5 text-sm leading-relaxed",
@@ -163,22 +309,49 @@ function MessageBubble({ msg }: { msg: Msg }) {
             ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
             : "bg-emerald-500 text-white"
         )}
-        dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+        dangerouslySetInnerHTML={{
+          __html: renderMarkdown(
+            msg.content
+          ),
+        }}
       />
     </div>
   );
 }
 
-function renderMarkdown(text: string): string {
+function renderMarkdown(
+  text: string
+): string {
   let html = text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.*?)\*/g, "<em>$1</em>")
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\n/g, "<br/>");
-  html = html.replace(/(?:<br\/>\s*)?[-*] (.*?)(?:<br\/>|$)/g, "<li>$1</li>");
-  html = html.replace(/(<li>.*?<\/li>)/g, "<ul class='my-1 list-disc pl-4 space-y-0.5'>$1</ul>");
+    .replace(
+      /\*\*(.*?)\*\*/g,
+      "<strong>$1</strong>"
+    )
+    .replace(
+      /\*(.*?)\*/g,
+      "<em>$1</em>"
+    )
+    .replace(
+      /`([^`]+)`/g,
+      "<code>$1</code>"
+    )
+    .replace(
+      /\n/g,
+      "<br/>"
+    );
+
+  html = html.replace(
+    /(?:<br\/>\s*)?[-*] (.*?)(?:<br\/>|$)/g,
+    "<li>$1</li>"
+  );
+
+  html = html.replace(
+    /(<li>.*?<\/li>)/g,
+    "<ul class='my-1 list-disc pl-4 space-y-0.5'>$1</ul>"
+  );
+
   return html;
 }

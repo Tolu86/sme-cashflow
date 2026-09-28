@@ -69,3 +69,26 @@ export function errorResponse(err: unknown): Response {
   const message = err instanceof Error ? err.message : "Internal server error";
   return Response.json({ error: message }, { status: 500 });
 }
+
+export async function requireProPlan(
+  businessId: string
+): Promise<void> {
+  const db = getAdminDb();
+
+  const businessSnap = await db
+    .doc(`businesses/${businessId}`)
+    .get();
+
+  if (!businessSnap.exists) {
+    throw new AuthError(404, "Business not found.");
+  }
+
+  const plan = businessSnap.data()?.plan;
+
+  if (plan !== "pro" && plan !== "premium") {
+    throw new AuthError(
+      403,
+      "This AI feature requires a Pro subscription. Please upgrade your plan."
+    );
+  }
+}

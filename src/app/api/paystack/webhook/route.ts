@@ -5,8 +5,19 @@ import { getAdminDb } from "@/lib/firebase/admin";
 
 export const maxDuration = 30;
 
-const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
-const PAYSTACK_PRO_PLAN_CODE = "PLN_u3cfv54cgum96k";
+const PAYSTACK_SECRET =
+  process.env.PAYSTACK_SECRET_KEY;
+
+const PAYSTACK_PRO_PLAN_CODE =
+  "PLN_u3cfv54cgum96k3";
+
+const PRO_AMOUNT = 300_000;
+
+/*
+ * ---------------------------------------------------------
+ * Paystack signature verification
+ * ---------------------------------------------------------
+ */
 
 function verifyPaystackSignature(
   rawBody: string,
@@ -17,21 +28,289 @@ function verifyPaystackSignature(
   }
 
   const hash = crypto
-    .createHmac("sha512", PAYSTACK_SECRET)
+    .createHmac(
+      "sha512",
+      PAYSTACK_SECRET
+    )
     .update(rawBody)
     .digest("hex");
 
+  const expected = Buffer.from(
+    hash,
+    "utf8"
+  );
+
+  const received = Buffer.from(
+    signature,
+    "utf8"
+  );
+
+  if (
+    expected.length !==
+    received.length
+  ) {
+    return false;
+  }
+
   return crypto.timingSafeEqual(
-    Buffer.from(hash),
-    Buffer.from(signature)
+    expected,
+    received
   );
 }
 
-export async function POST(req: Request) {
+/*
+ * ---------------------------------------------------------
+ * Helper functions
+ * ---------------------------------------------------------
+ */
+
+type WebhookData =
+  Record<string, any>;
+
+function getPlanCode(
+  data: WebhookData
+): string | undefined {
+  if (
+    typeof data.plan === "object" &&
+    data.plan !== null
+  ) {
+    return (
+      data.plan as {
+        plan_code?: string;
+      }
+    ).plan_code;
+  }
+
+  return undefined;
+}
+
+function getSubscriptionCode(
+  data: WebhookData
+): string | null {
+  if (
+    typeof data.subscription ===
+      "object" &&
+    data.subscription !== null &&
+    typeof data.subscription
+      .subscription_code === "string"
+  ) {
+    return data.subscription
+      .subscription_code;
+  }
+
+  if (
+    typeof data.subscription_code ===
+    "string"
+  ) {
+    return data.subscription_code;
+  }
+
+  return null;
+}
+
+function getCustomerCode(
+  data: WebhookData
+): string | null {
+  if (
+    typeof data.customer === "object" &&
+    data.customer !== null &&
+    typeof data.customer
+      .customer_code === "string"
+  ) {
+    return data.customer.customer_code;
+  }
+
+  return null;
+}
+
+function getCustomerEmail(
+  data: WebhookData
+): string | null {
+  if (
+    typeof data.customer === "object" &&
+    data.customer !== null &&
+    typeof data.customer.email ===
+      "string"
+  ) {
+    return data.customer.email;
+  }
+
+  return null;
+}
+
+function getSubscriptionStatus(
+  data: WebhookData
+): string | null {
+  if (
+    typeof data.subscription ===
+      "object" &&
+    data.subscription !== null &&
+    typeof data.subscription.status ===
+      "string"
+  ) {
+    return data.subscription.status;
+  }
+
+  if (
+    typeof data.status === "string"
+  ) {
+    return data.status;
+  }
+
+  return null;
+}
+
+function getNextPaymentDate(
+  data: WebhookData
+): string | null {
+  if (
+    typeof data.subscription ===
+      "object" &&
+    data.subscription !== null &&
+    typeof data.subscription
+      .next_payment_date === "string"
+  ) {
+    return data.subscription
+      .next_payment_date;
+  }
+
+  if (
+    typeof data.next_payment_date ===
+    "string"
+  ) {
+    return data.next_payment_date;
+  }
+
+  return null;
+}
+
+function getEmailToken(
+  data: WebhookData
+): string | null {
+  if (
+    typeof data.subscription ===
+      "object" &&
+    data.subscription !== null &&
+    typeof data.subscription
+      .email_token === "string"
+  ) {
+    return data.subscription
+      .email_token;
+  }
+
+  if (
+    typeof data.email_token ===
+    "string"
+  ) {
+    return data.email_token;
+  }
+
+  return null;
+}
+
+function getTransactionReference(
+  data: WebhookData
+): string | null {
+  if (
+    typeof data.reference ===
+    "string"
+  ) {
+    return data.reference;
+  }
+
+  if (
+    typeof data.transaction ===
+      "object" &&
+    data.transaction !== null &&
+    typeof data.transaction
+      .reference === "string"
+  ) {
+    return data.transaction.reference;
+  }
+
+  return null;
+}
+
+function getAmount(
+  data: WebhookData
+): number | null {
+  if (
+    typeof data.amount === "number"
+  ) {
+    return data.amount;
+  }
+
+  if (
+    typeof data.amount === "string" &&
+    !Number.isNaN(Number(data.amount))
+  ) {
+    return Number(data.amount);
+  }
+
+  if (
+    typeof data.transaction ===
+      "object" &&
+    data.transaction !== null
+  ) {
+    const amount =
+      data.transaction.amount;
+
+    if (
+      typeof amount === "number"
+    ) {
+      return amount;
+    }
+
+    if (
+      typeof amount === "string" &&
+      !Number.isNaN(Number(amount))
+    ) {
+      return Number(amount);
+    }
+  }
+
+  return null;
+}
+
+function getCurrency(
+  data: WebhookData
+): string | null {
+  if (
+    typeof data.currency ===
+    "string"
+  ) {
+    return data.currency;
+  }
+
+  if (
+    typeof data.transaction ===
+      "object" &&
+    data.transaction !== null &&
+    typeof data.transaction
+      .currency === "string"
+  ) {
+    return data.transaction
+      .currency;
+  }
+
+  return null;
+}
+
+/*
+ * ---------------------------------------------------------
+ * Main webhook
+ * ---------------------------------------------------------
+ */
+
+export async function POST(
+  req: Request
+) {
   try {
-    // ---------------------------------------------------------
-    // 1. Make sure Paystack is configured
-    // ---------------------------------------------------------
+    /*
+     * -------------------------------------------------------
+     * 1. Check Paystack configuration
+     * -------------------------------------------------------
+     */
 
     if (!PAYSTACK_SECRET) {
       console.error(
@@ -39,29 +318,36 @@ export async function POST(req: Request) {
       );
 
       return Response.json(
-        { error: "Webhook is not configured." },
+        {
+          error:
+            "Webhook is not configured.",
+        },
         { status: 503 }
       );
     }
 
-    // ---------------------------------------------------------
-    // 2. Read the RAW request body
-    // ---------------------------------------------------------
-    //
-    // IMPORTANT:
-    // We must read the raw body before JSON parsing because
-    // Paystack signs the original request payload.
-    //
+    /*
+     * -------------------------------------------------------
+     * 2. Read the RAW request body
+     * -------------------------------------------------------
+     *
+     * This is important because the signature is calculated
+     * from the exact raw payload Paystack sends.
+     */
 
-    const rawBody = await req.text();
+    const rawBody =
+      await req.text();
 
-    // ---------------------------------------------------------
-    // 3. Verify Paystack signature
-    // ---------------------------------------------------------
+    /*
+     * -------------------------------------------------------
+     * 3. Verify Paystack signature
+     * -------------------------------------------------------
+     */
 
-    const signature = req.headers.get(
-      "x-paystack-signature"
-    );
+    const signature =
+      req.headers.get(
+        "x-paystack-signature"
+      );
 
     if (!signature) {
       console.warn(
@@ -69,37 +355,76 @@ export async function POST(req: Request) {
       );
 
       return Response.json(
-        { error: "Missing signature." },
+        {
+          error:
+            "Missing signature.",
+        },
         { status: 401 }
       );
     }
 
-    if (!verifyPaystackSignature(rawBody, signature)) {
+    if (
+      !verifyPaystackSignature(
+        rawBody,
+        signature
+      )
+    ) {
       console.warn(
         "Paystack webhook rejected: invalid signature."
       );
 
       return Response.json(
-        { error: "Invalid signature." },
+        {
+          error:
+            "Invalid signature.",
+        },
         { status: 401 }
       );
     }
 
-    // ---------------------------------------------------------
-    // 4. Parse webhook event
-    // ---------------------------------------------------------
+    /*
+     * -------------------------------------------------------
+     * 4. Parse webhook
+     * -------------------------------------------------------
+     */
 
-    const event = JSON.parse(rawBody) as {
+    let event: {
       event?: string;
-      data?: Record<string, any>;
+      data?: WebhookData;
     };
 
-    const eventName = event.event;
-    const data = event.data;
-
-    if (!eventName || !data) {
+    try {
+      event = JSON.parse(
+        rawBody
+      ) as {
+        event?: string;
+        data?: WebhookData;
+      };
+    } catch {
       return Response.json(
-        { error: "Invalid webhook payload." },
+        {
+          error:
+            "Invalid webhook JSON.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const eventName =
+      event.event;
+
+    const data =
+      event.data;
+
+    if (
+      !eventName ||
+      !data
+    ) {
+      return Response.json(
+        {
+          error:
+            "Invalid webhook payload.",
+        },
         { status: 400 }
       );
     }
@@ -108,285 +433,739 @@ export async function POST(req: Request) {
       `Paystack webhook received: ${eventName}`
     );
 
-    const db = getAdminDb();
+    const db =
+      getAdminDb();
 
-    // ---------------------------------------------------------
-    // 5. Handle successful payment
-    // ---------------------------------------------------------
+    const now =
+      Date.now();
 
-    if (eventName === "charge.success") {
+    /*
+     * =======================================================
+     * 5. CHARGE.SUCCESS
+     * =======================================================
+     *
+     * This handles:
+     *
+     * A. Initial Pro subscription payment
+     *
+     * B. Future recurring Pro payments
+     *
+     * Paystack sends charge.success for successful
+     * subscription payments.
+     */
+
+    if (
+      eventName ===
+      "charge.success"
+    ) {
       const reference =
-        typeof data.reference === "string"
-          ? data.reference
-          : null;
-
-      if (!reference) {
-        console.warn(
-          "charge.success webhook has no reference."
+        getTransactionReference(
+          data
         );
 
-        return Response.json({ received: true });
-      }
-
-      const paymentRef = db.doc(
-        `paymentTransactions/${reference}`
-      );
-
-      const paymentSnap = await paymentRef.get();
-
-      if (!paymentSnap.exists) {
-        console.warn(
-          `Payment transaction not found: ${reference}`
+      const subscriptionCode =
+        getSubscriptionCode(
+          data
         );
 
-        // Return 200 so Paystack doesn't repeatedly send
-        // an event that our system cannot associate.
+      const planCode =
+        getPlanCode(
+          data
+        );
+
+      /*
+       * -----------------------------------------------------
+       * Verify plan if Paystack supplied it
+       * -----------------------------------------------------
+       */
+
+      if (
+        planCode &&
+        planCode !==
+          PAYSTACK_PRO_PLAN_CODE
+      ) {
+        console.warn(
+          `Ignoring charge for different Paystack plan: ${planCode}`
+        );
+
         return Response.json({
           received: true,
           ignored: true,
         });
       }
 
-      const payment = paymentSnap.data();
+      /*
+       * -----------------------------------------------------
+       * Verify amount
+       * -----------------------------------------------------
+       */
 
-      // -------------------------------------------------------
-      // Security checks
-      // -------------------------------------------------------
+      const amount =
+        getAmount(data);
 
       if (
-        payment?.provider !== "paystack" ||
-        payment?.plan !== "pro"
+        amount !== null &&
+        amount !== PRO_AMOUNT
       ) {
         console.warn(
-          `Invalid payment record for ${reference}`
+          `Unexpected Paystack amount: ${amount}`
         );
 
         return Response.json(
-          { error: "Invalid payment record." },
+          {
+            error:
+              "Payment amount mismatch.",
+          },
           { status: 400 }
         );
       }
 
-      const metadata =
-        data.metadata as
-          | {
-              business_id?: string;
-              user_id?: string;
-              plan?: string;
+      /*
+       * -----------------------------------------------------
+       * Verify currency
+       * -----------------------------------------------------
+       */
+
+      const currency =
+        getCurrency(data);
+
+      if (
+        currency &&
+        currency !== "NGN"
+      ) {
+        return Response.json(
+          {
+            error:
+              "Payment currency mismatch.",
+          },
+          { status: 400 }
+        );
+      }
+
+      /*
+       * -----------------------------------------------------
+       * INITIAL PAYMENT
+       * -----------------------------------------------------
+       *
+       * Our initialize route creates:
+       *
+       * paymentTransactions/{reference}
+       *
+       * before sending the customer to Paystack.
+       */
+
+      if (reference) {
+        const paymentRef =
+          db.doc(
+            `paymentTransactions/${reference}`
+          );
+
+        const paymentSnap =
+          await paymentRef.get();
+
+        if (
+          paymentSnap.exists
+        ) {
+          const payment =
+            paymentSnap.data();
+
+          /*
+           * Security checks
+           */
+
+          if (
+            payment?.provider !==
+              "paystack" ||
+            payment?.plan !==
+              "pro"
+          ) {
+            console.warn(
+              `Invalid payment record for ${reference}`
+            );
+
+            return Response.json(
+              {
+                error:
+                  "Invalid payment record.",
+              },
+              { status: 400 }
+            );
+          }
+
+          if (
+            payment.amount !==
+            PRO_AMOUNT
+          ) {
+            console.warn(
+              `Stored payment amount mismatch for ${reference}`
+            );
+
+            return Response.json(
+              {
+                error:
+                  "Stored payment amount mismatch.",
+              },
+              { status: 400 }
+            );
+          }
+
+          /*
+           * Verify metadata when supplied.
+           */
+
+          const metadata =
+            data.metadata as
+              | {
+                  business_id?: string;
+                  user_id?: string;
+                  plan?: string;
+                }
+              | undefined;
+
+          if (
+            metadata?.business_id &&
+            metadata.business_id !==
+              payment.businessId
+          ) {
+            return Response.json(
+              {
+                error:
+                  "Business mismatch.",
+              },
+              { status: 400 }
+            );
+          }
+
+          if (
+            metadata?.user_id &&
+            metadata.user_id !==
+              payment.userId
+          ) {
+            return Response.json(
+              {
+                error:
+                  "User mismatch.",
+              },
+              { status: 400 }
+            );
+          }
+
+          if (
+            metadata?.plan &&
+            metadata.plan !==
+              "pro"
+          ) {
+            return Response.json(
+              {
+                error:
+                  "Plan mismatch.",
+              },
+              { status: 400 }
+            );
+          }
+
+          const businessId =
+            payment.businessId as
+              | string
+              | undefined;
+
+          const userId =
+            payment.userId as
+              | string
+              | undefined;
+
+          if (
+            !businessId ||
+            !userId
+          ) {
+            return Response.json(
+              {
+                error:
+                  "Payment is missing business or user information.",
+              },
+              { status: 400 }
+            );
+          }
+
+          const bizRef =
+            db.doc(
+              `businesses/${businessId}`
+            );
+
+          const customerCode =
+            getCustomerCode(
+              data
+            );
+
+          const customerEmail =
+            getCustomerEmail(
+              data
+            );
+
+          const subscriptionStatus =
+            getSubscriptionStatus(
+              data
+            );
+
+          const nextPaymentDate =
+            getNextPaymentDate(
+              data
+            );
+
+          const emailToken =
+            getEmailToken(
+              data
+            );
+
+          /*
+           * ---------------------------------------------------
+           * Fulfill initial payment
+           * ---------------------------------------------------
+           */
+
+          await db.runTransaction(
+            async (tx) => {
+              const freshPayment =
+                await tx.get(
+                  paymentRef
+                );
+
+              if (
+                !freshPayment.exists
+              ) {
+                return;
+              }
+
+              const freshData =
+                freshPayment.data();
+
+              /*
+               * Idempotency:
+               * Paystack may deliver the same event again.
+               */
+              if (
+                freshData?.status ===
+                "paid"
+              ) {
+                return;
+              }
+
+              /*
+               * Mark payment as paid.
+               */
+
+              tx.update(
+                paymentRef,
+                {
+                  status: "paid",
+
+                  paystackStatus:
+                    data.status ??
+                    "success",
+
+                  paystackReference:
+                    reference,
+
+                  customerCode,
+
+                  customerEmail,
+
+                  subscriptionCode,
+
+                  subscriptionStatus,
+
+                  nextPaymentDate,
+
+                  emailToken,
+
+                  paidAt: now,
+
+                  verifiedAt: now,
+
+                  updatedAt: now,
+                }
+              );
+
+              /*
+               * Activate Pro.
+               */
+
+              tx.update(
+                bizRef,
+                {
+                  plan: "pro",
+
+                  planUpdatedAt:
+                    now,
+
+                  planSource:
+                    `paystack:${reference}`,
+                }
+              );
+
+              /*
+               * If Paystack already gave us
+               * the subscription code, save it
+               * immediately.
+               */
+
+              if (
+                subscriptionCode
+              ) {
+                const subscriptionRef =
+                  db.doc(
+                    `subscriptions/${businessId}`
+                  );
+
+                tx.set(
+                  subscriptionRef,
+                  {
+                    businessId,
+
+                    userId,
+
+                    plan: "pro",
+
+                    paystackPlanCode:
+                      PAYSTACK_PRO_PLAN_CODE,
+
+                    subscriptionCode,
+
+                    customerCode,
+
+                    customerEmail,
+
+                    status:
+                      subscriptionStatus ??
+                      "active",
+
+                    nextPaymentDate,
+
+                    emailToken,
+
+                    createdAt:
+                      now,
+
+                    updatedAt:
+                      now,
+                  },
+                  {
+                    merge: true,
+                  }
+                );
+              }
             }
+          );
+
+          console.log(
+            `Pro plan activated for business ${businessId}`
+          );
+
+          return Response.json({
+            received: true,
+
+            activated: true,
+
+            initialPayment: true,
+
+            subscriptionStored:
+              Boolean(
+                subscriptionCode
+              ),
+          });
+        }
+      }
+
+      /*
+       * =====================================================
+       * RECURRING PAYMENT
+       * =====================================================
+       *
+       * A future recurring transaction normally has a new
+       * transaction reference, so there will not be an
+       * existing paymentTransactions document for it.
+       *
+       * We identify the subscription using its subscription
+       * code.
+       */
+
+      if (
+        !subscriptionCode
+      ) {
+        console.warn(
+          "Successful charge has no subscription code and no matching payment record."
+        );
+
+        return Response.json({
+          received: true,
+          ignored: true,
+        });
+      }
+
+      /*
+       * Find subscription.
+       */
+
+      const subscriptionsSnap =
+        await db
+          .collection(
+            "subscriptions"
+          )
+          .where(
+            "subscriptionCode",
+            "==",
+            subscriptionCode
+          )
+          .limit(1)
+          .get();
+
+      if (
+        subscriptionsSnap.empty
+      ) {
+        console.warn(
+          `Subscription not found for recurring charge: ${subscriptionCode}`
+        );
+
+        return Response.json({
+          received: true,
+
+          subscriptionFound:
+            false,
+        });
+      }
+
+      const subscriptionDoc =
+        subscriptionsSnap
+          .docs[0];
+
+      const subscription =
+        subscriptionDoc.data();
+
+      const businessId =
+        subscription.businessId as
+          | string
+          | undefined;
+
+      const userId =
+        subscription.userId as
+          | string
           | undefined;
 
       if (
-        metadata?.business_id &&
-        metadata.business_id !== payment.businessId
+        !businessId
       ) {
-        console.warn(
-          `Business mismatch for ${reference}`
-        );
-
-        return Response.json(
-          { error: "Business mismatch." },
-          { status: 400 }
-        );
-      }
-
-      if (
-        metadata?.user_id &&
-        metadata.user_id !== payment.userId
-      ) {
-        console.warn(
-          `User mismatch for ${reference}`
-        );
-
-        return Response.json(
-          { error: "User mismatch." },
-          { status: 400 }
-        );
-      }
-
-      if (
-        metadata?.plan &&
-        metadata.plan !== "pro"
-      ) {
-        console.warn(
-          `Plan mismatch for ${reference}`
-        );
-
-        return Response.json(
-          { error: "Plan mismatch." },
-          { status: 400 }
-        );
-      }
-
-      // The plan attached to this subscription must be
-      // our Pro Paystack plan.
-      const planCode =
-        typeof data.plan === "object" &&
-        data.plan !== null
-          ? (data.plan as { plan_code?: string }).plan_code
-          : undefined;
-
-      if (
-        planCode &&
-        planCode !== PAYSTACK_PRO_PLAN_CODE
-      ) {
-        console.warn(
-          `Paystack plan mismatch for ${reference}`
-        );
-
-        return Response.json(
-          { error: "Paystack plan mismatch." },
-          { status: 400 }
-        );
-      }
-
-      // Check amount when Paystack provides it.
-      if (
-        typeof data.amount === "number" &&
-        data.amount !== payment.amount
-      ) {
-        console.warn(
-          `Payment amount mismatch for ${reference}`
-        );
-
-        return Response.json(
-          { error: "Payment amount mismatch." },
-          { status: 400 }
-        );
-      }
-
-      if (
-        data.currency &&
-        data.currency !== "NGN"
-      ) {
-        return Response.json(
-          { error: "Payment currency mismatch." },
-          { status: 400 }
-        );
-      }
-
-      // -------------------------------------------------------
-      // Already processed?
-      // -------------------------------------------------------
-
-      if (payment.status === "paid") {
         return Response.json({
           received: true,
-          alreadyProcessed: true,
+          ignored: true,
         });
       }
 
-      const businessId =
-        payment.businessId as string;
+      /*
+       * Prepare renewal data.
+       */
 
-      const bizRef = db.doc(
-        `businesses/${businessId}`
+      const nextPaymentDate =
+        getNextPaymentDate(
+          data
+        );
+
+      const customerCode =
+        getCustomerCode(
+          data
+        );
+
+      const customerEmail =
+        getCustomerEmail(
+          data
+        );
+
+      /*
+       * Paystack transaction reference
+       * becomes our renewal reference.
+       */
+
+      const renewalReference =
+        reference ??
+        `renewal-${subscriptionCode}-${now}`;
+
+      const renewalRef =
+        db.doc(
+          `paymentTransactions/${renewalReference}`
+        );
+
+      /*
+       * Save recurring payment and
+       * keep business Pro.
+       */
+
+      await db.runTransaction(
+        async (tx) => {
+          const existingRenewal =
+            await tx.get(
+              renewalRef
+            );
+
+          /*
+           * Idempotency:
+           * don't create the same renewal twice.
+           */
+
+          if (
+            !existingRenewal.exists
+          ) {
+            tx.set(
+              renewalRef,
+              {
+                reference:
+                  renewalReference,
+
+                userId:
+                  userId ?? null,
+
+                businessId,
+
+                email:
+                  customerEmail ??
+                  subscription.customerEmail ??
+                  null,
+
+                plan: "pro",
+
+                amount:
+                  PRO_AMOUNT,
+
+                currency:
+                  "NGN",
+
+                status:
+                  "paid",
+
+                provider:
+                  "paystack",
+
+                type:
+                  "subscription_renewal",
+
+                subscriptionCode,
+
+                customerCode:
+                  customerCode ??
+                  subscription.customerCode ??
+                  null,
+
+                customerEmail:
+                  customerEmail ??
+                  subscription.customerEmail ??
+                  null,
+
+                paystackStatus:
+                  data.status ??
+                  "success",
+
+                paystackReference:
+                  renewalReference,
+
+                paidAt: now,
+
+                createdAt:
+                  now,
+
+                updatedAt:
+                  now,
+              }
+            );
+          }
+
+          /*
+           * Update subscription.
+           */
+
+          tx.update(
+            subscriptionDoc.ref,
+            {
+              status: "active",
+
+              lastPaymentAt:
+                now,
+
+              lastPaymentReference:
+                renewalReference,
+
+              nextPaymentDate:
+                nextPaymentDate ??
+                subscription.nextPaymentDate ??
+                null,
+
+              customerCode:
+                customerCode ??
+                subscription.customerCode ??
+                null,
+
+              customerEmail:
+                customerEmail ??
+                subscription.customerEmail ??
+                null,
+
+              updatedAt:
+                now,
+            }
+          );
+
+          /*
+           * Keep Pro active.
+           */
+
+          tx.update(
+            db.doc(
+              `businesses/${businessId}`
+            ),
+            {
+              plan: "pro",
+
+              planUpdatedAt:
+                now,
+
+              planSource:
+                `paystack:renewal:${renewalReference}`,
+            }
+          );
+        }
       );
 
-      const now = Date.now();
-
-      // -------------------------------------------------------
-      // Activate Pro atomically
-      // -------------------------------------------------------
-
-      await db.runTransaction(async (tx) => {
-        const freshPayment =
-          await tx.get(paymentRef);
-
-        if (!freshPayment.exists) {
-          return;
-        }
-
-        const freshData =
-          freshPayment.data();
-
-        if (freshData?.status === "paid") {
-          return;
-        }
-
-        tx.update(paymentRef, {
-          status: "paid",
-          paystackStatus: data.status ?? "success",
-          paystackReference: reference,
-          paidAt: now,
-          updatedAt: now,
-
-          customerCode:
-            typeof data.customer === "object" &&
-            data.customer !== null
-              ? (
-                  data.customer as {
-                    customer_code?: string;
-                  }
-                ).customer_code ?? null
-              : null,
-        });
-
-        tx.update(bizRef, {
-          plan: "pro",
-          planUpdatedAt: now,
-          planSource: `paystack:${reference}`,
-        });
-      });
-
       console.log(
-        `Pro plan activated for business ${businessId}`
+        `Recurring Pro payment recorded for business ${businessId}`
       );
 
       return Response.json({
         received: true,
-        activated: true,
+        renewed: true,
       });
     }
 
-    // ---------------------------------------------------------
-    // 6. Subscription created
-    // ---------------------------------------------------------
+    /*
+     * =======================================================
+     * 6. SUBSCRIPTION.CREATE
+     * =======================================================
+     *
+     * Paystack sends subscription.create when the customer
+     * has been subscribed successfully.
+     *
+     * We use the payment transaction's Paystack/customer
+     * information to associate the subscription.
+     */
 
-    if (eventName === "subscription.create") {
+    if (
+      eventName ===
+      "subscription.create"
+    ) {
       const subscriptionCode =
-        typeof data.subscription_code === "string"
-          ? data.subscription_code
-          : null;
-
-      const customer =
-        typeof data.customer === "object" &&
-        data.customer !== null
-          ? (data.customer as {
-              customer_code?: string;
-              email?: string;
-            })
-          : null;
-
-      const customerCode =
-        customer?.customer_code ?? null;
-
-      const customerEmail =
-        customer?.email ?? null;
-
-      const plan =
-        typeof data.plan === "object" &&
-        data.plan !== null
-          ? (data.plan as {
-              plan_code?: string;
-            })
-          : null;
-
-      if (
-        plan?.plan_code &&
-        plan.plan_code !== PAYSTACK_PRO_PLAN_CODE
-      ) {
-        console.warn(
-          "Ignoring subscription for a different Paystack plan."
+        getSubscriptionCode(
+          data
         );
 
-        return Response.json({
-          received: true,
-          ignored: true,
-        });
-      }
-
-      if (!subscriptionCode) {
+      if (
+        !subscriptionCode
+      ) {
         console.warn(
           "subscription.create has no subscription code."
         );
@@ -396,12 +1175,44 @@ export async function POST(req: Request) {
         });
       }
 
-      // -------------------------------------------------------
-      // Find the most recent pending/initialized/paid
-      // Pro transaction belonging to this customer email.
-      // -------------------------------------------------------
+      const planCode =
+        getPlanCode(
+          data
+        );
 
-      if (!customerEmail) {
+      if (
+        planCode &&
+        planCode !==
+          PAYSTACK_PRO_PLAN_CODE
+      ) {
+        return Response.json({
+          received: true,
+          ignored: true,
+        });
+      }
+
+      const customer =
+        typeof data.customer ===
+          "object" &&
+        data.customer !== null
+          ? data.customer
+          : null;
+
+      const customerEmail =
+        typeof customer?.email ===
+        "string"
+          ? customer.email
+          : null;
+
+      const customerCode =
+        typeof customer?.customer_code ===
+        "string"
+          ? customer.customer_code
+          : null;
+
+      if (
+        !customerEmail
+      ) {
         console.warn(
           "subscription.create has no customer email."
         );
@@ -411,232 +1222,487 @@ export async function POST(req: Request) {
         });
       }
 
-      const paymentsSnap = await db
-        .collection("paymentTransactions")
-        .where("email", "==", customerEmail)
-        .where("plan", "==", "pro")
-        .limit(20)
-        .get();
+      /*
+       * Find the most recent initialized/paid Pro
+       * transaction belonging to this customer.
+       *
+       * This is still only a fallback association.
+       * The initial charge.success handler normally
+       * stores the subscription first.
+       */
 
-      if (paymentsSnap.empty) {
+      const paymentsSnap =
+        await db
+          .collection(
+            "paymentTransactions"
+          )
+          .where(
+            "email",
+            "==",
+            customerEmail
+          )
+          .where(
+            "plan",
+            "==",
+            "pro"
+          )
+          .limit(20)
+          .get();
+
+      if (
+        paymentsSnap.empty
+      ) {
         console.warn(
-          `No payment transaction found for ${customerEmail}`
+          `No Pro payment transaction found for ${customerEmail}`
         );
 
         return Response.json({
           received: true,
-          subscriptionStored: false,
+
+          subscriptionStored:
+            false,
         });
       }
+
+      /*
+       * Select the newest payment.
+       */
 
       let paymentDoc =
         paymentsSnap.docs[0];
 
-      for (const doc of paymentsSnap.docs) {
+      for (
+        const candidate of
+        paymentsSnap.docs
+      ) {
         const current =
-          doc.data();
+          candidate.data();
 
         const selected =
           paymentDoc.data();
 
         if (
-          typeof current.createdAt === "number" &&
-          typeof selected.createdAt === "number" &&
-          current.createdAt > selected.createdAt
+          typeof current.createdAt ===
+            "number" &&
+          typeof selected.createdAt ===
+            "number" &&
+          current.createdAt >
+            selected.createdAt
         ) {
-          paymentDoc = doc;
+          paymentDoc =
+            candidate;
         }
       }
 
-      const payment = paymentDoc.data();
+      const payment =
+        paymentDoc.data();
 
       const businessId =
-        payment.businessId as string | undefined;
+        payment.businessId as
+          | string
+          | undefined;
 
-      if (!businessId) {
-        console.warn(
-          "Payment has no businessId."
-        );
+      const userId =
+        payment.userId as
+          | string
+          | undefined;
 
+      if (
+        !businessId ||
+        !userId
+      ) {
         return Response.json({
           received: true,
+
+          subscriptionStored:
+            false,
         });
       }
 
-      const now = Date.now();
+      const nextPaymentDate =
+        getNextPaymentDate(
+          data
+        );
+
+      const emailToken =
+        getEmailToken(
+          data
+        );
+
+      const subscriptionStatus =
+        getSubscriptionStatus(
+          data
+        ) ?? "active";
+
+      /*
+       * Save subscription.
+       */
 
       await db
-        .doc(`subscriptions/${businessId}`)
+        .doc(
+          `subscriptions/${businessId}`
+        )
         .set(
           {
             businessId,
-            userId: payment.userId,
+
+            userId,
+
             plan: "pro",
+
             paystackPlanCode:
               PAYSTACK_PRO_PLAN_CODE,
+
             subscriptionCode,
+
             customerCode,
+
             customerEmail,
+
             status:
-              typeof data.status === "string"
-                ? data.status
-                : "active",
-            nextPaymentDate:
-              data.next_payment_date ?? null,
+              subscriptionStatus,
+
+            nextPaymentDate,
+
+            emailToken,
+
             createdAt:
               data.createdAt ??
               data.created_at ??
-              null,
-            updatedAt: now,
+              now,
+
+            updatedAt:
+              now,
           },
-          { merge: true }
-        );
-
-      return Response.json({
-        received: true,
-        subscriptionStored: true,
-      });
-    }
-
-    // ---------------------------------------------------------
-    // 7. Subscription will not renew
-    // ---------------------------------------------------------
-
-    if (eventName === "subscription.not_renew") {
-      const subscriptionCode =
-        typeof data.subscription_code === "string"
-          ? data.subscription_code
-          : null;
-
-      if (!subscriptionCode) {
-        return Response.json({
-          received: true,
-        });
-      }
-
-      const subscriptionsSnap = await db
-        .collection("subscriptions")
-        .where(
-          "subscriptionCode",
-          "==",
-          subscriptionCode
-        )
-        .limit(1)
-        .get();
-
-      if (!subscriptionsSnap.empty) {
-        await subscriptionsSnap.docs[0].ref.update({
-          status: "non-renewing",
-          nextPaymentDate:
-            data.next_payment_date ?? null,
-          updatedAt: Date.now(),
-        });
-      }
-
-      // IMPORTANT:
-      // We do NOT remove Pro immediately.
-      //
-      // The customer has already paid for their current
-      // billing period. Paystack says the subscription becomes
-      // disabled on the next payment date.
-      return Response.json({
-        received: true,
-      });
-    }
-
-    // ---------------------------------------------------------
-    // 8. Subscription disabled
-    // ---------------------------------------------------------
-
-    if (eventName === "subscription.disable") {
-      const subscriptionCode =
-        typeof data.subscription_code === "string"
-          ? data.subscription_code
-          : null;
-
-      if (!subscriptionCode) {
-        return Response.json({
-          received: true,
-        });
-      }
-
-      const subscriptionsSnap = await db
-        .collection("subscriptions")
-        .where(
-          "subscriptionCode",
-          "==",
-          subscriptionCode
-        )
-        .limit(1)
-        .get();
-
-      if (!subscriptionsSnap.empty) {
-        const subscriptionDoc =
-          subscriptionsSnap.docs[0];
-
-        const subscription =
-          subscriptionDoc.data();
-
-        const businessId =
-          subscription.businessId as string;
-
-        const now = Date.now();
-
-        await db.runTransaction(
-          async (tx) => {
-            tx.update(subscriptionDoc.ref, {
-              status:
-                data.status ?? "cancelled",
-              disabledAt: now,
-              updatedAt: now,
-            });
-
-            tx.update(
-              db.doc(
-                `businesses/${businessId}`
-              ),
-              {
-                plan: "free",
-                planUpdatedAt: now,
-                planSource:
-                  `paystack:subscription-disabled`,
-              }
-            );
+          {
+            merge: true,
           }
         );
+
+      console.log(
+        `Paystack subscription stored for business ${businessId}`
+      );
+
+      return Response.json({
+        received: true,
+
+        subscriptionStored:
+          true,
+      });
+    }
+
+    /*
+     * =======================================================
+     * 7. SUBSCRIPTION.NOT_RENEW
+     * =======================================================
+     *
+     * Do NOT remove Pro immediately.
+     *
+     * Paystack describes non-renewing subscriptions as
+     * still active until the next payment date.
+     */
+
+    if (
+      eventName ===
+      "subscription.not_renew"
+    ) {
+      const subscriptionCode =
+        getSubscriptionCode(
+          data
+        );
+
+      if (
+        !subscriptionCode
+      ) {
+        return Response.json({
+          received: true,
+        });
+      }
+
+      const subscriptionsSnap =
+        await db
+          .collection(
+            "subscriptions"
+          )
+          .where(
+            "subscriptionCode",
+            "==",
+            subscriptionCode
+          )
+          .limit(1)
+          .get();
+
+      if (
+        !subscriptionsSnap.empty
+      ) {
+        const subscriptionDoc =
+          subscriptionsSnap
+            .docs[0];
+
+        await subscriptionDoc.ref
+          .update({
+            status:
+              "non-renewing",
+
+            nextPaymentDate:
+              getNextPaymentDate(
+                data
+              ),
+
+            updatedAt:
+              now,
+          });
       }
 
       return Response.json({
         received: true,
+
+        nonRenewing:
+          true,
       });
     }
 
-    // ---------------------------------------------------------
-    // 9. Failed recurring payment
-    // ---------------------------------------------------------
+    /*
+     * =======================================================
+     * 8. SUBSCRIPTION.DISABLE
+     * =======================================================
+     *
+     * This is where Pro is finally removed.
+     */
+
+    if (
+      eventName ===
+      "subscription.disable"
+    ) {
+      const subscriptionCode =
+        getSubscriptionCode(
+          data
+        );
+
+      if (
+        !subscriptionCode
+      ) {
+        return Response.json({
+          received: true,
+        });
+      }
+
+      const subscriptionsSnap =
+        await db
+          .collection(
+            "subscriptions"
+          )
+          .where(
+            "subscriptionCode",
+            "==",
+            subscriptionCode
+          )
+          .limit(1)
+          .get();
+
+      if (
+        subscriptionsSnap.empty
+      ) {
+        console.warn(
+          `Disabled subscription not found: ${subscriptionCode}`
+        );
+
+        return Response.json({
+          received: true,
+
+          subscriptionFound:
+            false,
+        });
+      }
+
+      const subscriptionDoc =
+        subscriptionsSnap
+          .docs[0];
+
+      const subscription =
+        subscriptionDoc.data();
+
+      const businessId =
+        subscription.businessId as
+          | string
+          | undefined;
+
+      if (
+        !businessId
+      ) {
+        return Response.json({
+          received: true,
+        });
+      }
+
+      const status =
+        typeof data.status ===
+        "string"
+          ? data.status
+          : "cancelled";
+
+      await db.runTransaction(
+        async (tx) => {
+          /*
+           * Update subscription status.
+           */
+
+          tx.update(
+            subscriptionDoc.ref,
+            {
+              status,
+
+              disabledAt:
+                now,
+
+              updatedAt:
+                now,
+            }
+          );
+
+          /*
+           * Remove Pro access.
+           */
+
+          tx.update(
+            db.doc(
+              `businesses/${businessId}`
+            ),
+            {
+              plan: "free",
+
+              planUpdatedAt:
+                now,
+
+              planSource:
+                `paystack:subscription-${status}`,
+            }
+          );
+        }
+      );
+
+      console.log(
+        `Pro plan removed for business ${businessId}: subscription ${status}`
+      );
+
+      return Response.json({
+        received: true,
+
+        downgraded: true,
+      });
+    }
+
+    /*
+     * =======================================================
+     * 9. INVOICE.PAYMENT_FAILED
+     * =======================================================
+     *
+     * Mark the subscription as attention.
+     *
+     * Do NOT immediately downgrade the business.
+     */
 
     if (
       eventName ===
       "invoice.payment_failed"
     ) {
-      const subscription =
-        typeof data.subscription === "object" &&
-        data.subscription !== null
-          ? (data.subscription as {
-              subscription_code?: string;
-              status?: string;
-              next_payment_date?: string;
-            })
-          : null;
-
       const subscriptionCode =
-        subscription?.subscription_code ??
-        null;
+        getSubscriptionCode(
+          data
+        );
 
-      if (subscriptionCode) {
+      if (
+        !subscriptionCode
+      ) {
+        return Response.json({
+          received: true,
+        });
+      }
+
+      const subscriptionsSnap =
+        await db
+          .collection(
+            "subscriptions"
+          )
+          .where(
+            "subscriptionCode",
+            "==",
+            subscriptionCode
+          )
+          .limit(1)
+          .get();
+
+      if (
+        !subscriptionsSnap.empty
+      ) {
+        const subscriptionDoc =
+          subscriptionsSnap
+            .docs[0];
+
+        const subscription =
+          subscriptionDoc.data();
+
+        await subscriptionDoc.ref
+          .update({
+            status:
+              "attention",
+
+            lastPaymentFailedAt:
+              now,
+
+            lastPaymentFailure:
+              typeof data.description ===
+              "string"
+                ? data.description
+                : null,
+
+            nextPaymentDate:
+              getNextPaymentDate(
+                data
+              ) ??
+              subscription.nextPaymentDate ??
+              null,
+
+            updatedAt:
+              now,
+          });
+
+        console.warn(
+          `Recurring payment failed for subscription ${subscriptionCode}`
+        );
+      }
+
+      return Response.json({
+        received: true,
+
+        paymentFailed:
+          true,
+      });
+    }
+
+    /*
+     * =======================================================
+     * 10. INVOICE.UPDATE
+     * =======================================================
+     */
+
+    if (
+      eventName ===
+      "invoice.update"
+    ) {
+      const subscriptionCode =
+        getSubscriptionCode(
+          data
+        );
+
+      if (
+        subscriptionCode
+      ) {
         const subscriptionsSnap =
           await db
-            .collection("subscriptions")
+            .collection(
+              "subscriptions"
+            )
             .where(
               "subscriptionCode",
               "==",
@@ -645,33 +1711,51 @@ export async function POST(req: Request) {
             .limit(1)
             .get();
 
-        if (!subscriptionsSnap.empty) {
-          await subscriptionsSnap.docs[0].ref.update({
-            status: "attention",
-            lastPaymentFailedAt:
-              Date.now(),
-            updatedAt: Date.now(),
-          });
+        if (
+          !subscriptionsSnap.empty
+        ) {
+          const subscriptionDoc =
+            subscriptionsSnap
+              .docs[0];
+
+          await subscriptionDoc.ref
+            .update({
+              lastInvoiceStatus:
+                typeof data.status ===
+                "string"
+                  ? data.status
+                  : null,
+
+              lastInvoiceCode:
+                typeof data.invoice_code ===
+                "string"
+                  ? data.invoice_code
+                  : null,
+
+              updatedAt:
+                now,
+            });
         }
       }
 
-      // Do NOT immediately downgrade here.
-      //
-      // The subscription can still have an active period,
-      // and the subscription status needs to determine when
-      // access should actually end.
       return Response.json({
         received: true,
       });
     }
 
-    // ---------------------------------------------------------
-    // 10. Other Paystack events
-    // ---------------------------------------------------------
+    /*
+     * =======================================================
+     * 11. UNHANDLED PAYSTACK EVENTS
+     * =======================================================
+     *
+     * Return 200 so Paystack knows the webhook was received.
+     */
 
     return Response.json({
       received: true,
-      event: eventName,
+
+      event:
+        eventName,
     });
   } catch (error) {
     console.error(
@@ -681,7 +1765,8 @@ export async function POST(req: Request) {
 
     return Response.json(
       {
-        error: "Webhook processing failed.",
+        error:
+          "Webhook processing failed.",
       },
       { status: 500 }
     );
