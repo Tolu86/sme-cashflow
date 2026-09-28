@@ -256,7 +256,7 @@ export function CopilotChat() {
             }}
             rows={1}
             placeholder="Ask about your cash flow..."
-            className="max-h-32 min-h-8 w-full resize-none bg-transparent py-1 text-sm outline-none placeholder:text-zinc-400"
+            className="max-h-32 min-h-8 w-full resize-none bg-transparent py-1 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 dark:text-zinc-100 dark:placeholder:text-zinc-500"
           />
 
           <button
