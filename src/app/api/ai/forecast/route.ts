@@ -1,6 +1,10 @@
 import { getOpenAI, AI_MODEL } from "@/lib/ai/openai";
 import { forecastNarrativePrompt } from "@/lib/ai/prompts";
-import { verifyRequest, errorResponse } from "@/lib/ai/route-auth";
+import {
+  verifyRequest,
+  requireProPlan,
+  errorResponse,
+} from "@/lib/ai/route-auth";
 import { buildAiContext } from "@/lib/ai/context";
 
 export const maxDuration = 60;
@@ -10,6 +14,7 @@ export async function POST(req: Request) {
     const body = (await req.json()) as { businessId: string };
     if (!body.businessId) return Response.json({ error: "Invalid request" }, { status: 400 });
     await verifyRequest(req, body.businessId);
+    await requireProPlan(body.businessId);
 
     const ctx = await buildAiContext(body.businessId);
     const client = getOpenAI();

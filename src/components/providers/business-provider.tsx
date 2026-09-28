@@ -140,6 +140,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         ownerId: user.uid,
         currency,
         createdAt: now,
+        plan: "free",
       } satisfies Omit<Business, "id">);
       const bizId = bizRef.id;
 

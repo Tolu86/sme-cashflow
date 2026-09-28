@@ -1,15 +1,39 @@
 import "server-only";
-import { initializeApp, getApps, getApp, cert } from "firebase-admin/app";
+
+import {
+  initializeApp,
+  getApps,
+  getApp,
+  cert,
+} from "firebase-admin/app";
+
 import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 
-const projectId = process.env.FIREBASE_PROJECT_ID;
-const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+const projectId =
+  process.env.FIREBASE_PROJECT_ID;
 
-export const adminConfigured = Boolean(projectId && clientEmail && privateKey);
+const clientEmail =
+  process.env.FIREBASE_CLIENT_EMAIL;
+
+const privateKey =
+  process.env.FIREBASE_PRIVATE_KEY?.replace(
+    /\\n/g,
+    "\n"
+  );
+
+export const adminConfigured =
+  Boolean(
+    projectId &&
+      clientEmail &&
+      privateKey
+  );
 
 function adminApp() {
-  if (getApps().length) return getApp();
+  if (getApps().length) {
+    return getApp();
+  }
+
   return initializeApp({
     credential: cert({
       projectId,
@@ -24,7 +48,14 @@ export function getAdminDb() {
   return getFirestore(adminApp());
 }
 
-export async function verifyIdToken(token: string) {
-  const { getAuth } = await import("firebase-admin/auth");
-  return getAuth(adminApp()).verifyIdToken(token);
+export function getAdminAuth() {
+  return getAuth(adminApp());
+}
+
+export async function verifyIdToken(
+  token: string
+) {
+  return getAdminAuth().verifyIdToken(
+    token
+  );
 }

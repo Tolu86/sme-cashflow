@@ -1,7 +1,11 @@
 
 import { getOpenAI, jsonCompletion } from "@/lib/ai/openai";
 import { CATEGORIZE_INSTRUCTION } from "@/lib/ai/prompts";
-import { verifyRequest, errorResponse } from "@/lib/ai/route-auth";
+import {
+  verifyRequest,
+  requireProPlan,
+  errorResponse,
+} from "@/lib/ai/route-auth";
 import { getAdminDb } from "@/lib/firebase/admin";
 import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 
@@ -47,7 +51,7 @@ export async function POST(req: Request) {
     }
 
     await verifyRequest(req, body.businessId);
-
+    await requireProPlan(body.businessId);
     const db = getAdminDb();
 
     const categoriesSnap = await db
