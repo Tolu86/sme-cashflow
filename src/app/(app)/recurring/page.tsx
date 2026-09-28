@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { useMemo, useState } from "react";
 import { Plus, Repeat, Power } from "lucide-react";
 import { useBusiness } from "@/components/providers/business-provider";
@@ -36,12 +37,10 @@ export default function RecurringPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Recurring</h1>
-          <p className="text-sm text-zinc-500">
-            Rent, payroll, subscriptions and invoices that repeat. We&apos;ll remind you when they&apos;re due.
-          </p>
-        </div>
+        <PageHeader
+          title="Recurring"
+          description="Manage your recurring transactions."
+        />
         <Button
           onClick={() => {
             setEditing(null);

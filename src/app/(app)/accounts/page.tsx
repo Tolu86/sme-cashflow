@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { useState } from "react";
 import { Plus, Landmark, Banknote, CreditCard, Trash2 } from "lucide-react";
 import { useBusiness } from "@/components/providers/business-provider";
@@ -73,10 +74,10 @@ export default function AccountsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Accounts</h1>
-          <p className="text-sm text-zinc-500">Bank, cash, and credit accounts for your business.</p>
-        </div>
+        <PageHeader
+          title="Accounts"
+          description="Manage your business accounts."
+        />
         <Button onClick={() => setOpen(true)}>
           <Plus size={16} />
           Add account

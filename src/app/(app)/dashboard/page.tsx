@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -78,10 +79,10 @@ export default function DashboardPage() {
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Cash flow at a glance</h1>
-          <p className="text-sm text-zinc-500">Here&apos;s how your money is moving.</p>
-        </div>
+        <PageHeader
+          title="Cash flow at a glance"
+          description="Here's how your money is moving."
+        />
         <Link
           href="/copilot"
           className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 text-sm font-medium text-white transition-colors hover:bg-emerald-600"
