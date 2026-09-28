@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Plus, Search, ArrowLeftRight, Upload } from "lucide-react";
@@ -65,10 +66,10 @@ export default function TransactionsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Transactions</h1>
-          <p className="text-sm text-zinc-500">All the money coming in and going out.</p>
-        </div>
+        <PageHeader
+          title="Transactions"
+          description="All the money coming in and going out."
+        />
         <div className="flex gap-2">
           <Link href="/import">
             <Button variant="secondary">

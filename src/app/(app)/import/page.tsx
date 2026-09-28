@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { useMemo, useRef, useState } from "react";
 import {
   UploadCloud,
@@ -183,12 +184,10 @@ const isPro =
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Import bank statements</h1>
-        <p className="text-sm text-zinc-500">
-          Upload a CSV from your bank, let Copilot categorize it, then review and import.
-        </p>
-      </div>
+      <PageHeader
+        title="Import"
+        description="Import your transactions from a CSV file."
+      />
 
       <div
         onClick={() => fileRef.current?.click()}

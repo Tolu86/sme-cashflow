@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { useState } from "react";
 import { Plus, Tag, Trash2 } from "lucide-react";
 import { useBusiness } from "@/components/providers/business-provider";
@@ -85,10 +86,10 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Categories</h1>
-        <p className="text-sm text-zinc-500">Organize transactions into income and expense categories.</p>
-      </div>
+      <PageHeader
+        title="Categories"
+        description="Organize your income and expenses."
+      />
 
       <CategorySection title="Expense categories" categories={expense} onAdd={() => openAdd("expense")} onEdit={openEdit} onDelete={remove} />
       <CategorySection title="Income categories" categories={income} onAdd={() => openAdd("income")} onEdit={openEdit} onDelete={remove} />

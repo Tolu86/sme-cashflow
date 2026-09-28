@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { useState } from "react";
 import {
   Bot,
@@ -38,14 +39,10 @@ export default function CopilotPage() {
   if (!isPro) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-            AI Copilot
-          </h1>
-          <p className="text-sm text-zinc-500">
-            Your AI finance assistant with live data from {business.name}.
-          </p>
-        </div>
+        <PageHeader
+          title="Cashflow Copilot"
+          description="Get AI-powered insights about your business."
+        />
 
         <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-900">
           <div className="max-w-md text-center">

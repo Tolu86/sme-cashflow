@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/ui/page-header";
 import { useEffect, useState } from "react";
 import { Plus, Save, Trash2, Users, Building2, Bell, Crown, Check } from "lucide-react";
 import { useBusiness } from "@/components/providers/business-provider";
@@ -126,10 +127,10 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Settings</h1>
-        <p className="text-sm text-zinc-500">Manage your business preferences.</p>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Manage your business preferences."
+      />
 
       <div id="plans">
         <Card>
