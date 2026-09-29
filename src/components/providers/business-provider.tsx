@@ -19,15 +19,22 @@ import type {
   Account,
   AppAlert,
   Business,
+  BusinessMembership,
   Category,
   RecurringRule,
   Transaction,
   Vendor,
 } from "@/types";
 import { DEFAULT_CATEGORIES } from "@/lib/constants";
+import {
+  resolveBusinessRole,
+  type BusinessRole,
+} from "@/lib/business-permissions";
 
 interface BusinessContextValue {
   business: Business | null;
+  role: BusinessRole | null;
+  membership: BusinessMembership | null;
   accounts: Account[];
   categories: Category[];
   vendors: Vendor[];
@@ -42,6 +49,8 @@ interface BusinessContextValue {
 
 const BusinessContext = createContext<BusinessContextValue>({
   business: null,
+  role: null,
+  membership: null,
   accounts: [],
   categories: [],
   vendors: [],
@@ -57,6 +66,8 @@ const BusinessContext = createContext<BusinessContextValue>({
 export function BusinessProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [business, setBusiness] = useState<Business | null>(null);
+  const [role, setRole] = useState<BusinessRole | null>(null);
+  const [membership, setMembership] = useState<BusinessMembership | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -81,7 +92,48 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         listAll<RecurringRule>(businessId, "recurring"),
         listSortedDesc<AppAlert>(businessId, "alerts"),
       ]);
-      setBusiness(bus);
+
+      if (!bus) {
+        setBusiness(null);
+        setRole(null);
+        setMembership(null);
+      } else {
+        setBusiness(bus);
+
+        if (user?.uid === bus.ownerId) {
+          setRole("owner");
+          setMembership(null);
+        } else if (user?.uid && db) {
+          const membershipSnap = await getDoc(
+            doc(db, "businesses", businessId, "members", user.uid)
+          );
+
+          if (membershipSnap.exists()) {
+            const data = membershipSnap.data();
+            const member = {
+              uid: user.uid,
+              businessId,
+              role: data.role,
+              status: data.status,
+              createdAt: data.createdAt,
+            } as BusinessMembership;
+
+            setMembership(member);
+            setRole(
+              member.status === "active"
+                ? resolveBusinessRole(user.uid, bus.ownerId, member.role)
+                : null
+            );
+          } else {
+            setMembership(null);
+            setRole(null);
+          }
+        } else {
+          setMembership(null);
+          setRole(null);
+        }
+      }
+
       setAccounts(accs);
       setCategories(cats);
       setVendors(vends);
@@ -89,7 +141,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       setRecurring(recs);
       setAlerts(alts);
     },
-    []
+    [user]
   );
 
   const reload = useCallback(async () => {
@@ -111,6 +163,8 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         if (!bizId) {
           if (!cancelled) {
             setBusiness(null);
+            setRole(null);
+            setMembership(null);
             setLoading(false);
           }
           return;
@@ -172,6 +226,8 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     <BusinessContext.Provider
       value={{
         business,
+        role,
+        membership,
         accounts,
         categories,
         vendors,
