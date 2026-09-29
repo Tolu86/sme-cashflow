@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ---------------------------------------------------------
-    // Authentication helpers
+    // Authentication and business-role helpers
     // ---------------------------------------------------------
 
     function signedIn() {
@@ -18,21 +18,39 @@ service cloud.firestore {
         ).data.ownerId == request.auth.uid;
     }
 
-    function isMember(businessId) {
-      let biz =
-        get(
-          /databases/$(database)/documents/businesses/$(businessId)
-        ).data;
-
+    function hasActiveMembership(businessId) {
       return signedIn()
-        && (
-          biz.ownerId == request.auth.uid
-          ||
-          (
-            biz.members != null
-            && biz.members.hasAny([request.auth.uid])
-          )
+        && exists(
+          /databases/$(database)/documents/businesses/$(businessId)/members/$(request.auth.uid)
+        )
+        && get(
+          /databases/$(database)/documents/businesses/$(businessId)/members/$(request.auth.uid)
+        ).data.status == "active";
+    }
+
+    function isBusinessUser(businessId) {
+      return ownsBusiness(businessId) || hasActiveMembership(businessId);
+    }
+
+    function isManagerOrOwner(businessId) {
+      return ownsBusiness(businessId)
+        || (
+          hasActiveMembership(businessId)
+          && get(
+            /databases/$(database)/documents/businesses/$(businessId)/members/$(request.auth.uid)
+          ).data.role == "manager"
         );
+    }
+
+    function validMemberData() {
+      return request.resource.data.uid == request.resource.data.uid
+        && request.resource.data.businessId == request.resource.data.businessId
+        && request.resource.data.role in ["manager", "staff"]
+        && request.resource.data.status in ["active", "invited", "suspended"];
+    }
+
+    function validTransactionBusiness(businessId) {
+      return request.resource.data.businessId == businessId;
     }
 
     // ---------------------------------------------------------
@@ -56,67 +74,119 @@ service cloud.firestore {
         if signedIn()
         && request.resource.data.ownerId == request.auth.uid;
 
-      // Read business
+      // Business details
       allow read:
-        if ownsBusiness(businessId)
-        || isMember(businessId);
+        if isBusinessUser(businessId);
 
-      // Update business
-      //
-      // Users can update normal business fields, but CANNOT
-      // change billing/subscription fields from the client.
+      // Only the owner can change business-level settings.
+      // Billing/subscription fields remain server-controlled.
       allow update:
         if ownsBusiness(businessId)
         && request.resource.data.plan == resource.data.plan
         && request.resource.data.planUpdatedAt == resource.data.planUpdatedAt
         && request.resource.data.planSource == resource.data.planSource;
 
-      // Delete business
       allow delete:
         if ownsBusiness(businessId);
 
       // -------------------------------------------------------
-      // Business subcollections
+      // Team memberships
       // -------------------------------------------------------
 
-      match /{document=**} {
-        allow read, write:
-          if signedIn()
-          && (
-            ownsBusiness(businessId)
-            || isMember(businessId)
-          );
+      match /members/{uid} {
+        allow read:
+          if isManagerOrOwner(businessId);
+
+        allow create:
+          if isManagerOrOwner(businessId)
+          && request.resource.data.uid == uid
+          && request.resource.data.businessId == businessId
+          && request.resource.data.role in ["manager", "staff"]
+          && request.resource.data.status in ["active", "invited", "suspended"];
+
+        allow update:
+          if isManagerOrOwner(businessId)
+          && request.resource.data.uid == uid
+          && request.resource.data.businessId == businessId
+          && request.resource.data.role in ["manager", "staff"]
+          && request.resource.data.status in ["active", "invited", "suspended"];
+
+        allow delete:
+          if isManagerOrOwner(businessId);
+      }
+
+      // -------------------------------------------------------
+      // Accounts, categories, vendors and recurring rules
+      // Owner/manager can manage them.
+      // All active business users can read them.
+      // -------------------------------------------------------
+
+      match /accounts/{documentId} {
+        allow read: if isBusinessUser(businessId);
+        allow create, update, delete: if isManagerOrOwner(businessId);
+      }
+
+      match /categories/{documentId} {
+        allow read: if isBusinessUser(businessId);
+        allow create, update, delete: if isManagerOrOwner(businessId);
+      }
+
+      match /vendors/{documentId} {
+        allow read: if isBusinessUser(businessId);
+        allow create, update, delete: if isManagerOrOwner(businessId);
+      }
+
+      match /recurring/{documentId} {
+        allow read: if isBusinessUser(businessId);
+        allow create, update, delete: if isManagerOrOwner(businessId);
+      }
+
+      // -------------------------------------------------------
+      // Transactions
+      //
+      // Staff: read + create
+      // Manager: read + create + update + delete
+      // Owner: full access
+      // -------------------------------------------------------
+
+      match /transactions/{documentId} {
+        allow read:
+          if isBusinessUser(businessId);
+
+        allow create:
+          if isBusinessUser(businessId)
+          && validTransactionBusiness(businessId);
+
+        allow update, delete:
+          if isManagerOrOwner(businessId);
+      }
+
+      // Alerts are visible to all active business users.
+      // Only owner/manager can directly modify them.
+      match /alerts/{documentId} {
+        allow read: if isBusinessUser(businessId);
+        allow create, update, delete: if isManagerOrOwner(businessId);
       }
     }
 
     // ---------------------------------------------------------
-    // Payment transactions
-    // -------------------------------------------------------
-    //
-    // IMPORTANT:
-    // Payment records are server-only.
-    //
-    // Your Next.js server using Firebase Admin SDK can read/write
-    // these records. Normal users cannot.
-    //
+    // Payment transactions: server-only
+    // ---------------------------------------------------------
 
     match /paymentTransactions/{reference} {
       allow read, write: if false;
     }
 
     // ---------------------------------------------------------
-    // Subscriptions
-    // -------------------------------------------------------
-    //
-    // These will also be controlled exclusively by the server.
-    //
+    // Subscriptions: server-only
+    // ---------------------------------------------------------
 
     match /subscriptions/{subscriptionId} {
       allow read, write: if false;
     }
 
     // ---------------------------------------------------------
-    // Everything else
+    // Everything else is denied by default.
     // ---------------------------------------------------------
 
     match /{document=**} {
