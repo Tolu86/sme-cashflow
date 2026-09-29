@@ -17,6 +17,16 @@ export interface Business {
   planUpdatedAt?: number;
 }
 
+export type MembershipStatus = "active" | "invited" | "suspended";
+
+export interface BusinessMembership {
+  uid: string;
+  businessId: string;
+  role: "manager" | "staff";
+  status: MembershipStatus;
+  createdAt: number;
+}
+
 export interface Account {
   id: string;
   businessId: string;
