@@ -70,10 +70,12 @@ export default function LoginPage() {
     <div className="flex flex-1 items-center justify-center bg-zinc-50 p-6 dark:bg-zinc-950">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500 text-white">
-            <svg viewBox="0 0 48 48" className="h-8 w-8" aria-hidden="true">
-              <text x="24" y="29" textAnchor="middle" fontSize="27" fontWeight="700" fill="#fff" fontFamily="ui-sans-serif, system-ui">C</text>
-          </svg>
+          <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center">
+            <img
+              src="/logo.png"
+              alt="Cashflow Copilot"
+              className="h-full w-full object-contain"
+            />
           </div>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Welcome back</h1>
           <p className="mt-1 text-sm text-zinc-500">Sign in to your cash flow workspace</p>
@@ -219,7 +221,8 @@ function getAuthError(err: unknown): string {
       case "auth/popup-closed-by-user":
         return "Sign-in popup closed. Try again.";
       default:
-        return "Unable to sign in. Check your credentials and try again.";
+        console.error("Firebase auth error:", errWithCode.code, err);
+        return `Sign-in error: ${errWithCode.code ?? "unknown"}`;
     }
   }
   return "Something went wrong. Please try again.";

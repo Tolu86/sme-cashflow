@@ -46,8 +46,12 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full flex-col">
       <Link href="/dashboard" className="flex items-center gap-2 px-5 py-5" onClick={onNavigate}>
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-sm font-bold text-white">
-          C
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center">
+          <img
+            src="/logo.png"
+            alt="Cashflow Copilot"
+            className="h-full w-full object-contain"
+          />
         </div>
         <div className="leading-tight">
           <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Cashflow Copilot</p>
