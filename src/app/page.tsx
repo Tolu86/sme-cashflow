@@ -22,8 +22,12 @@ export default function HomePage() {
       <header className="border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/80">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-sm font-bold text-white">
-              C
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center">
+              <img
+                src="/logo.png"
+                alt="Cashflow Copilot"
+                className="h-full w-full object-contain"
+              />
             </div>
             <span className="text-sm font-semibold">Cashflow Copilot</span>
           </div>
