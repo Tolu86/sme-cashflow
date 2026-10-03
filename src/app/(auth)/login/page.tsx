@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider } from "firebase/auth";
 import { signInWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
@@ -13,6 +13,10 @@ import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const redirectTo =
+  searchParams.get("redirect") || "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -31,7 +35,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth!, email, password);
-      router.replace("/dashboard");
+      router.replace(redirectTo);
     } catch (err) {
       setError(getAuthError(err));
     } finally {
@@ -44,7 +48,7 @@ export default function LoginPage() {
     setGoogleLoading(true);
     try {
       await signInWithPopup(auth!, new GoogleAuthProvider());
-      router.replace("/dashboard");
+      router.replace(redirectTo);
     } catch (err) {
       setError(getAuthError(err));
     } finally {
@@ -57,9 +61,13 @@ export default function LoginPage() {
     setError(null);
     setResetLoading(true);
     try {
-      await sendPasswordResetEmail(auth!, resetEmail);
-      setResetSent(true);
+  await sendPasswordResetEmail(auth!, resetEmail);
+  console.log("PASSWORD RESET EMAIL SENT:", resetEmail);
+  setResetSent(true);
+
+
     } catch (err) {
+       console.error("PASSWORD RESET ERROR:", err);
       setError(getAuthError(err));
     } finally {
       setResetLoading(false);

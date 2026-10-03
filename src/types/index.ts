@@ -22,6 +22,7 @@ export type MembershipStatus = "active" | "invited" | "suspended";
 export interface BusinessMembership {
   uid: string;
   businessId: string;
+  email?: string;
   role: "manager" | "staff";
   status: MembershipStatus;
   createdAt: number;

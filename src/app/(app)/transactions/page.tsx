@@ -26,6 +26,9 @@ export default function TransactionsPage() {
   const [accountFilter, setAccountFilter] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [minAmount, setMinAmount] = useState("");
+  const [maxAmount, setMaxAmount] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
   const handledEditRef = useRef(false);
 
   useEffect(() => {
@@ -52,14 +55,37 @@ export default function TransactionsPage() {
         if (accountFilter && t.accountId !== accountFilter) return false;
         if (startDate && t.date < startDate) return false;
         if (endDate && t.date > endDate) return false;
+        if (minAmount && t.amount < Number(minAmount)) return false;
+        if (maxAmount && t.amount > Number(maxAmount)) return false;
         if (q) {
           const haystack = [t.notes, t.tags.join(" "), categoryName(categories, t.categoryId)].join(" ").toLowerCase();
           if (!haystack.includes(q)) return false;
         }
         return true;
       })
-      .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
-  }, [transactions, query, typeFilter, categoryFilter, accountFilter, startDate, endDate, categories]);
+      .sort((a, b) => {
+  if (sortBy === "highest") {
+    return b.amount - a.amount;
+  }
+
+  return (
+    b.date.localeCompare(a.date) ||
+    b.createdAt - a.createdAt
+  );
+});
+  }, [
+  transactions,
+  query,
+  typeFilter,
+  categoryFilter,
+  accountFilter,
+  startDate,
+  endDate,
+  minAmount,
+  maxAmount,
+  sortBy,
+  categories,
+]);
 
   if (loading || !business) return <LoadingScreen label="Loading transactions..." />;
 
@@ -89,7 +115,7 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 rounded-xl border border-zinc-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-6 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="grid grid-cols-1 gap-3 rounded-xl border border-zinc-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="lg:col-span-2">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
@@ -118,11 +144,53 @@ export default function TransactionsPage() {
           placeholder="All accounts"
           options={accounts.map((a) => ({ value: a.id, label: a.name }))}
         />
-        <div className="flex items-center gap-1">
-          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-2" />
-          <span className="text-zinc-400">–</span>
-          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-2" />
-        </div>
+        <Select
+  value={sortBy}
+  onChange={(e) => setSortBy(e.target.value)}
+  placeholder="Sort by"
+  options={[
+    { value: "newest", label: "Newest to oldest" },
+    { value: "highest", label: "Highest amount to lowest" },
+  ]}
+/>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 xl:col-span-2">
+  <Input
+    type="date"
+    value={startDate}
+    onChange={(e) => setStartDate(e.target.value)}
+    className="min-w-0"
+  />
+
+  <span className="text-sm text-zinc-400">–</span>
+
+  <Input
+    type="date"
+    value={endDate}
+    onChange={(e) => setEndDate(e.target.value)}
+    className="min-w-0"
+  />
+</div>
+        <div className="grid grid-cols-[minmax(140px,1fr)_auto_minmax(140px,1fr)] items-center gap-2 xl:col-span-2">
+  <Input
+    type="number"
+    min="0"
+    value={minAmount}
+    onChange={(e) => setMinAmount(e.target.value)}
+    placeholder="Min amount"
+  
+  />
+
+  <span className="text-sm text-zinc-400">–</span>
+
+  <Input
+    type="number"
+    min="0"
+    value={maxAmount}
+    onChange={(e) => setMaxAmount(e.target.value)}
+    placeholder="Max amount"
+    
+  />
+</div>
       </div>
 
       {filtered.length === 0 ? (
