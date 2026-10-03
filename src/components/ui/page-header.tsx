@@ -9,12 +9,15 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <div>
-      <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
-        {title}
-      </h1>
+      <h1
+  className="text-2xl font-bold"
+  style={{ color: "var(--foreground)" }}
+>
+  {title}
+</h1>
 
       {description && (
-        <p className="text-sm text-zinc-500 dark:text-zinc-300">
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
           {description}
         </p>
       )}
