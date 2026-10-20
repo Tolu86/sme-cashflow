@@ -15,6 +15,10 @@ export interface Business {
   createdAt: number;
   plan?: PlanId;
   planUpdatedAt?: number;
+  trialStartedAt?: number;
+  trialEndsAt?: number;
+  trialUsed?: boolean;
+  trialStatus?: "active" | "expired";
 }
 
 export type MembershipStatus = "active" | "invited" | "suspended";
