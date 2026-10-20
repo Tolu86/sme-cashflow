@@ -471,12 +471,46 @@ export function BusinessProvider({
         }
 
         /*
-         * Load the business and all relevant data.
+         * Start the one-time trial for a newly created business.
+         * The server validates ownership, creation time and trial history.
          */
         if (!cancelled) {
-          await loadBusinessData(
-            businessId
-          );
+          try {
+            const businessSnap = await getDoc(
+              doc(db, "businesses", businessId)
+            );
+            const businessData = businessSnap.data();
+            const createdAt = businessData?.createdAt;
+            const isNewBusiness =
+              typeof createdAt === "number" &&
+              Date.now() - createdAt >= 0 &&
+              Date.now() - createdAt <= 30 * 60 * 1000;
+
+            if (
+              businessSnap.exists() &&
+              !businessData?.trialUsed &&
+              isNewBusiness
+            ) {
+              const token = await user.getIdToken();
+              const response = await fetch("/api/trial/start", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ businessId }),
+              });
+
+              if (!response.ok) {
+                console.error("Could not start the trial:", await response.text());
+              }
+            }
+          } catch (trialError) {
+            // Trial activation must not prevent access to the user's existing business.
+            console.error("Trial activation attempt failed:", trialError);
+          }
+
+          await loadBusinessData(businessId);
         }
       } catch (e) {
         console.error(
@@ -602,6 +636,24 @@ export function BusinessProvider({
             merge: true,
           }
         );
+
+        // Activate the trial through the server; never grant trial entitlements client-side.
+        try {
+          const token = await user.getIdToken();
+          const response = await fetch("/api/trial/start", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ businessId }),
+          });
+          if (!response.ok) {
+            console.error("Could not start the trial:", await response.text());
+          }
+        } catch (trialError) {
+          console.error("Trial activation request failed:", trialError);
+        }
 
         /*
          * Create default categories.
