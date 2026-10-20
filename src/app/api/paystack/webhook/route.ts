@@ -64,6 +64,8 @@ function verifyPaystackSignature(
  * ---------------------------------------------------------
  */
 
+// Paystack sends a dynamic payload; keep this boundary type flexible.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type WebhookData =
   Record<string, any>;
 
