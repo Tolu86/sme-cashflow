@@ -72,7 +72,13 @@ service cloud.firestore {
       // Create business
       allow create:
         if signedIn()
-        && request.resource.data.ownerId == request.auth.uid;
+        && request.resource.data.ownerId == request.auth.uid
+        && !request.resource.data.keys().hasAny([
+          "trialStartedAt",
+          "trialEndsAt",
+          "trialUsed",
+          "trialStatus"
+        ]);
 
       // Business details
       allow read:
@@ -84,7 +90,11 @@ service cloud.firestore {
         if ownsBusiness(businessId)
         && request.resource.data.plan == resource.data.plan
         && request.resource.data.planUpdatedAt == resource.data.planUpdatedAt
-        && request.resource.data.planSource == resource.data.planSource;
+        && request.resource.data.planSource == resource.data.planSource
+        && request.resource.data.trialStartedAt == resource.data.trialStartedAt
+        && request.resource.data.trialEndsAt == resource.data.trialEndsAt
+        && request.resource.data.trialUsed == resource.data.trialUsed
+        && request.resource.data.trialStatus == resource.data.trialStatus;
 
       allow delete:
         if ownsBusiness(businessId);
