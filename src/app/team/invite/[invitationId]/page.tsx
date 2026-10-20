@@ -239,13 +239,13 @@ export default function InvitationPage() {
             </div>
 
             <CardTitle className="text-center">
-              You're invited to join a business
+              You&apos;re invited to join a business
             </CardTitle>
           </CardHeader>
 
           <div className="space-y-4">
             <p className="text-center text-sm text-zinc-500">
-              You've been invited to join
+              You&apos;ve been invited to join
               Cashflow Copilot as a team
               member.
             </p>
@@ -303,7 +303,7 @@ export default function InvitationPage() {
 
             {!auth?.currentUser && (
               <p className="text-center text-xs text-zinc-400">
-                You'll need to sign in with the
+                You&apos;ll need to sign in with the
                 invited email address before
                 accepting.
               </p>
