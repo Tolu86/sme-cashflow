@@ -98,7 +98,7 @@ export default function LoginPage() {
               <div className="space-y-4">
                 <p className="text-sm text-zinc-500">
                   If an account exists for <span className="font-medium text-zinc-900 dark:text-zinc-100">{resetEmail}</span>,
-                  we've sent a password reset link to that email.
+                  we&apos;ve sent a password reset link to that email.
                 </p>
                 <Button variant="outline" className="w-full" onClick={() => setResetMode(false)}>
                   Back to sign in
