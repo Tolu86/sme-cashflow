@@ -1555,8 +1555,7 @@ async function signOutAllDevices() {
         data.mode === "paystack" &&
         data.authorizationUrl
       ) {
-        window.location.href =
-          data.authorizationUrl;
+        window.location.assign(data.authorizationUrl);
         return;
       }
 
