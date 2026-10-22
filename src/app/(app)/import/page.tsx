@@ -21,6 +21,7 @@ import { parseCsv, toDrafts, type TransactionDraft } from "@/lib/csv/parse";
 import { createOne } from "@/lib/firestore/helpers";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/cn";
+import { isTrialActive } from "@/lib/plans";
 
 interface Row extends TransactionDraft {
   include: boolean;
@@ -180,7 +181,8 @@ export default function ImportPage() {
 
 const isPro =
   business.plan === "pro" ||
-  business.plan === "premium";
+  business.plan === "premium" ||
+  isTrialActive(business.trialEndsAt);
 
   return (
     <div className="space-y-6">
