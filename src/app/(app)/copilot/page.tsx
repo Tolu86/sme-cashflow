@@ -16,6 +16,7 @@ import { InsightsPanel } from "@/components/copilot/insights-panel";
 import { useBusiness } from "@/components/providers/business-provider";
 import { LoadingScreen } from "@/components/ui/empty-state";
 import Link from "next/link";
+import { isTrialActive } from "@/lib/plans";
 
 type Tab = "chat" | "forecast" | "insights";
 
@@ -34,7 +35,9 @@ export default function CopilotPage() {
   }
 
   const isPro =
-    business.plan === "pro" || business.plan === "premium";
+    business.plan === "pro" ||
+    business.plan === "premium" ||
+    isTrialActive(business.trialEndsAt);
 
   if (!isPro) {
     return (
