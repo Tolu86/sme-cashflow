@@ -82,18 +82,33 @@ export function formatPrice(meta: PlanMeta): string {
   return `₦${naira.toLocaleString("en-NG")}/mo`;
 }
 
-export function effectivePlan(plan: PlanId | undefined): PlanChoice {
+export function isTrialActive(trialEndsAt: number | undefined, now = Date.now()): boolean {
+  return typeof trialEndsAt === "number" && trialEndsAt > now;
+}
+
+export function effectivePlan(
+  plan: PlanId | undefined,
+  trialEndsAt?: number
+): PlanChoice {
   if (plan === "pro" || plan === "premium") return "pro";
+  if (isTrialActive(trialEndsAt)) return "pro";
   return "free";
 }
 
-export function planMeta(plan: PlanId | undefined): PlanMeta {
-  const id = effectivePlan(plan);
+export function planMeta(
+  plan: PlanId | undefined,
+  trialEndsAt?: number
+): PlanMeta {
+  const id = effectivePlan(plan, trialEndsAt);
   return PLANS.find((p) => p.id === id) ?? PLANS[0];
 }
 
-export function hasFeature(plan: PlanId | undefined, feature: PlanFeature): boolean {
-  return planMeta(plan).features.includes(feature);
+export function hasFeature(
+  plan: PlanId | undefined,
+  feature: PlanFeature,
+  trialEndsAt?: number
+): boolean {
+  return planMeta(plan, trialEndsAt).features.includes(feature);
 }
 
 const FEATURE_MIN: Record<PlanFeature, PlanChoice> = {
@@ -114,6 +129,10 @@ const FEATURE_MIN: Record<PlanFeature, PlanChoice> = {
   copilot: "pro",
 };
 
-export function can(plan: PlanId | undefined, feature: PlanFeature): boolean {
-  return RANK[effectivePlan(plan)] >= RANK[FEATURE_MIN[feature]];
+export function can(
+  plan: PlanId | undefined,
+  feature: PlanFeature,
+  trialEndsAt?: number
+): boolean {
+  return RANK[effectivePlan(plan, trialEndsAt)] >= RANK[FEATURE_MIN[feature]];
 }

@@ -40,7 +40,7 @@ const accountIcons: Record<AccountType, typeof Landmark> = {
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { business, accounts } = useBusiness();
-  const visible = NAV.filter((item) => can(business?.plan, item.feature));
+  const visible = NAV.filter((item) => can(business?.plan, item.feature, business?.trialEndsAt));
   const locked = NAV.length - visible.length;
 
   return (

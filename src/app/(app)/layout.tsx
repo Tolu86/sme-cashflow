@@ -10,6 +10,7 @@ import { Topbar } from "@/components/layout/topbar";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { OnboardingTour } from "@/components/onboarding/tour";
 import { SetupGuide } from "@/components/setup/setup-guide";
+import { TrialBanner } from "@/components/layout/trial-banner";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, profile } = useAuth();
@@ -48,6 +49,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar onMenuClick={() => setSidebarOpen(true)} />
+          <TrialBanner />
           <main className="flex-1 overflow-y-auto">
             <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
               {!profile?.businessId ? <OnboardingWizard /> : <SetupGuide>{children}</SetupGuide>}

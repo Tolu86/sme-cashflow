@@ -183,7 +183,8 @@ const [verificationSending, setVerificationSending] =
     useState<number | null>(null);
 
   const current = planMeta(
-    business?.plan
+    business?.plan,
+    business?.trialEndsAt
   );
 
   /*
