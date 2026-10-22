@@ -83,12 +83,16 @@ export async function requireProPlan(
     throw new AuthError(404, "Business not found.");
   }
 
-  const plan = businessSnap.data()?.plan;
+  const business = businessSnap.data() ?? {};
+  const plan = business.plan;
+  const trialEndsAt = business.trialEndsAt;
+  const trialActive =
+    typeof trialEndsAt === "number" && trialEndsAt > Date.now();
 
-  if (plan !== "pro" && plan !== "premium") {
+  if (plan !== "pro" && plan !== "premium" && !trialActive) {
     throw new AuthError(
       403,
-      "This AI feature requires a Pro subscription. Please upgrade your plan."
+      "This AI feature requires an active Pro plan or trial. Please upgrade your plan."
     );
   }
 }
