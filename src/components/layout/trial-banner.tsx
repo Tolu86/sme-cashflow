@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useBusiness } from "@/components/providers/business-provider";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function TrialBanner() {
-  const { business } = useBusiness();
+  const { business, reload } = useBusiness();
   const [now, setNow] = useState<number | null>(null);
+  const expiryRefreshAttempted = useRef(false);
 
   useEffect(() => {
     const updateTime = () => setNow(Date.now());
@@ -18,6 +19,21 @@ export function TrialBanner() {
   }, []);
 
   const trialEndsAt = business?.trialEndsAt;
+
+  useEffect(() => {
+    if (
+      now !== null &&
+      typeof trialEndsAt === "number" &&
+      trialEndsAt <= now &&
+      business?.plan !== "pro" &&
+      business?.plan !== "premium" &&
+      !expiryRefreshAttempted.current
+    ) {
+      expiryRefreshAttempted.current = true;
+      void reload();
+    }
+  }, [now, trialEndsAt, business?.plan, reload]);
+
   if (
     !business ||
     business.plan === "pro" ||
