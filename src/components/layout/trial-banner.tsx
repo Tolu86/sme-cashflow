@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useBusiness } from "@/components/providers/business-provider";
-import { Button } from "@/components/ui/button";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -54,9 +53,12 @@ export function TrialBanner() {
             Give feedback
           </a>
         ) : null}
-        <Button asChild size="sm">
-          <Link href="/settings#subscription">View plans</Link>
-        </Button>
+        <Link
+          href="/settings#subscription"
+          className="inline-flex h-8 items-center justify-center rounded-lg bg-emerald-600 px-3 text-xs font-medium text-white transition-colors hover:bg-emerald-700"
+        >
+          View plans
+        </Link>
       </div>
     </div>
   );
