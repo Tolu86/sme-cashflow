@@ -86,9 +86,12 @@ export default function CopilotPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-          AI Copilot
-        </h1>
+        <h1
+  className="text-2xl font-bold"
+  style={{ color: "var(--foreground)" }}
+>
+  AI Copilot
+</h1>
         <p className="text-sm text-zinc-500">
           Your AI finance assistant with live data from {business.name}.
         </p>
