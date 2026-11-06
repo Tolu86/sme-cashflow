@@ -44,7 +44,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const locked = NAV.length - visible.length;
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col bg-white dark:bg-[#111c2d]">
       <Link href="/dashboard" className="flex items-center gap-2 px-5 py-5" onClick={onNavigate}>
         <div className="flex h-14 w-14 shrink-0 items-center justify-center">
           <img
@@ -80,10 +80,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 data-tour={`nav-${item.href}`}
                 onClick={onNavigate}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                   active
-                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                    : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                    ? "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-100"
                 )}
               >
                 <Icon size={18} />
@@ -94,7 +94,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </motion.nav>
 
-      <div className="border-t border-zinc-200 px-3 py-3 dark:border-zinc-800">
+      <div className="border-t border-slate-200/80 px-3 py-3 dark:border-slate-800">
         <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-400">
           Accounts
         </p>
