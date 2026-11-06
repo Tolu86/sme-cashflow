@@ -45,7 +45,7 @@ export default function DashboardPage() {
 
   if (transactions.length === 0) {
     return (
-      <div className="space-y-6" data-tour="dashboard">
+      <div className="space-y-7" data-tour="dashboard">
         <EmptyState
           icon={<Bot size={28} />}
           title="Welcome to Cashflow Copilot"
@@ -85,7 +85,7 @@ export default function DashboardPage() {
         />
         <Link
           href="/copilot"
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 text-sm font-medium text-white transition-colors hover:bg-emerald-600"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#00c076] px-5 text-sm font-semibold text-white shadow-sm shadow-emerald-900/10 transition-all hover:bg-emerald-600 hover:shadow-md"
         >
           <Bot size={16} />
           Ask your Copilot
@@ -94,8 +94,8 @@ export default function DashboardPage() {
 
       {summary && <SummaryCards summary={summary} currency={currency} />}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <div className="xl:col-span-2">
           <CashflowChart points={series} currency={currency} onRangeChange={setRange} />
         </div>
         <div>

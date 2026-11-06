@@ -8,10 +8,10 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const { user, logout, profile } = useAuth();
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-zinc-200 bg-white px-4 sm:px-6 dark:border-zinc-800 dark:bg-zinc-900">
+    <header className="flex h-20 items-center justify-between border-b border-slate-200/70 bg-white/90 px-4 backdrop-blur-xl sm:px-6 dark:border-slate-800 dark:bg-[#111c2d]/90">
       <button
         onClick={onMenuClick}
-        className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 lg:hidden"
+        className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden"
         aria-label="Open menu"
       >
         <Menu size={20} />
