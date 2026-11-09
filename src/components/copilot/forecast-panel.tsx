@@ -21,6 +21,7 @@ import { formatMoney } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
 import { cn } from "@/lib/cn";
 import { buildForecast, lowestProjectedBalance } from "@/lib/analytics";
+import { isTrialActive } from "@/lib/plans";
 
 interface ForecastData {
   narrative: string;
@@ -37,7 +38,8 @@ export function ForecastPanel() {
   const [error, setError] = useState<string | null>(null);
 
   const isPro =
-    business?.plan === "pro" || business?.plan === "premium";
+    business?.plan === "pro" || business?.plan === "premium" ||
+    (business ? isTrialActive(business.trialEndsAt) : false);
 
   useEffect(() => {
     if (!isPro) return;
@@ -154,7 +156,7 @@ export function ForecastPanel() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
           30-day cash flow forecast
@@ -170,7 +172,7 @@ export function ForecastPanel() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Projected balance by day</CardTitle>
@@ -192,7 +194,7 @@ export function ForecastPanel() {
                   >
                     <stop
                       offset="5%"
-                      stopColor="#0ea5e9"
+                      stopColor="#00c076"
                       stopOpacity={0.3}
                     />
                     <stop
@@ -229,13 +231,13 @@ export function ForecastPanel() {
 
                 <Tooltip
                   contentStyle={{
-                    background: "#18181b",
-                    border: "none",
+                    background: "#ffffff",
+                    border: "1px solid #e2e8f0",
                     borderRadius: 12,
-                    color: "#fff",
+                    color: "#0f172a",
                     fontSize: 12,
                   }}
-                  labelStyle={{ color: "#a1a1aa" }}
+                  labelStyle={{ color: "#64748b" }}
                   formatter={(value) => [
                     formatMoney(Number(value) || 0, currency),
                     "Balance",
@@ -245,7 +247,7 @@ export function ForecastPanel() {
                 <Area
                   type="monotone"
                   dataKey="balance"
-                  stroke="#0ea5e9"
+                  stroke="#00a96a"
                   strokeWidth={2}
                   fill="url(#proj)"
                   isAnimationActive={false}
