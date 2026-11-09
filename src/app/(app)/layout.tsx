@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { motion, useReducedMotion } from "framer-motion";
 import { LoadingScreen } from "@/components/ui/empty-state";
 import { useAuth } from "@/components/providers/auth-provider";
 import { BusinessProvider } from "@/components/providers/business-provider";
@@ -15,6 +16,8 @@ import { TrialBanner } from "@/components/layout/trial-banner";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, profile } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const reduceMotion = useReducedMotion();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Retire legacy appearance preferences across the authenticated app.
@@ -58,7 +61,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <TrialBanner />
           <main className="flex-1 overflow-y-auto pb-24 lg:pb-0">
             <div className="mx-auto w-full max-w-[1280px] px-4 py-6 sm:px-6 lg:px-8">
-              {!profile?.businessId ? <OnboardingWizard /> : <SetupGuide>{children}</SetupGuide>}
+              {!profile?.businessId ? (
+                <OnboardingWizard />
+              ) : (
+                <SetupGuide>
+                  {pathname === "/dashboard" ? (
+                    children
+                  ) : (
+                    <motion.div
+                      key={pathname}
+                      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: reduceMotion ? 0 : 0.4 }}
+                    >
+                      {children}
+                    </motion.div>
+                  )}
+                </SetupGuide>
+              )}
             </div>
           </main>
           <MobileNavigation />
