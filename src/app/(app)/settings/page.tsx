@@ -1638,7 +1638,7 @@ async function signOutAllDevices() {
                       }
                       className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition ${
                         active
-                          ? "bg-primary text-white"
+                          ? "bg-emerald-700 text-white"
                           : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
                       }`}
                     >
