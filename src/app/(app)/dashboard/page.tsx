@@ -1,23 +1,20 @@
 "use client";
 
-import { PageHeader } from "@/components/ui/page-header";
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, CalendarDays, Download, Sparkles, ShieldCheck, TrendingUp, Wallet, Activity } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ArrowLeftRight, CalendarDays, Sparkles, ShieldCheck, TrendingUp, Wallet, Activity, Bot } from "lucide-react";
 import { useBusiness } from "@/components/providers/business-provider";
 import { useAuth } from "@/components/providers/auth-provider";
-import { SummaryCards } from "@/components/dashboard/summary-cards";
 import { CashflowChart } from "@/components/dashboard/cashflow-chart";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
 import { motion } from "framer-motion";
 import { AlertsPanel } from "@/components/dashboard/alerts-panel";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState, LoadingScreen } from "@/components/ui/empty-state";
 import { periodSummary, buildCashflowSeries, buildForecast, lowestProjectedBalance } from "@/lib/analytics";
 import { computeAlerts } from "@/lib/alerts";
 import { daysAgoISO, todayISO, formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
-import { Bot } from "lucide-react";
+import { can } from "@/lib/plans";
 
 export default function DashboardPage() {
   const { transactions, accounts, recurring, business, loading } = useBusiness();
@@ -25,6 +22,7 @@ export default function DashboardPage() {
   const [range, setRange] = useState(30);
 
   const currency = business?.currency ?? profile?.currency ?? "USD";
+  const copilotEnabled = can(business?.plan, "copilot", business?.trialEndsAt);
 
   const summary = useMemo(() => {
     if (!transactions.length && !accounts.length) return null;
@@ -94,9 +92,11 @@ export default function DashboardPage() {
             <span className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 text-xs font-medium text-slate-200">
               <CalendarDays size={15} /> Last 30 days
             </span>
-            <Link href="/copilot" className="inline-flex items-center gap-2 rounded-xl bg-[#00c076] px-5 py-2.5 text-sm font-semibold text-[#08291c] transition hover:bg-emerald-300">
-              <Sparkles size={16} /> Ask Copilot <ArrowRight size={15} />
-            </Link>
+            {copilotEnabled && (
+              <Link href="/copilot" className="inline-flex items-center gap-2 rounded-xl bg-[#00c076] px-5 py-2.5 text-sm font-semibold text-[#08291c] transition hover:bg-emerald-300">
+                <Sparkles size={16} /> Ask Copilot <ArrowRight size={15} />
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -107,7 +107,7 @@ export default function DashboardPage() {
           <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Financial health</h2>
         </div>
         <Link href="/transactions" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:border-emerald-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-          <Download size={15} /> Transaction history
+          <ArrowLeftRight size={15} /> Transaction history
         </Link>
       </div>
 
@@ -161,9 +161,11 @@ export default function DashboardPage() {
               {lowest && lowest.value < 0 ? "Potential cash shortfall" : "Lowest projected cash balance"}
               {lowest ? ` around ${formatDate(lowest.date)}.` : "."}
             </p>
-            <Link href="/copilot" className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 hover:underline dark:text-emerald-400">
-              Explore with Copilot <ArrowRight size={16} />
-            </Link>
+            {copilotEnabled && (
+              <Link href="/copilot" className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 hover:underline dark:text-emerald-400">
+                Explore with Copilot <ArrowRight size={16} />
+              </Link>
+            )}
           </div>
           <AlertsPanel alerts={alerts.filter((a) => a.type !== "cashCrunch")} />
         </div>
@@ -182,8 +184,8 @@ export default function DashboardPage() {
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500 text-white"><Bot size={22} /></div>
             <h3 className="mt-5 text-xl font-semibold tracking-tight text-slate-900 dark:text-white">Your treasury copilot</h3>
             <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">Ask questions about spending, forecast cash flow, and find opportunities to improve your finances.</p>
-            <Link href="/copilot" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0e2130] px-4 py-3 text-sm font-semibold text-white hover:bg-[#1c3b48]">
-              Open Copilot <ArrowRight size={16} />
+            <Link href={copilotEnabled ? "/copilot" : "/settings"} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0e2130] px-4 py-3 text-sm font-semibold text-white hover:bg-[#1c3b48]">
+              {copilotEnabled ? "Open Copilot" : "Explore Copilot access"} <ArrowRight size={16} />
             </Link>
           </div>
         </div>
