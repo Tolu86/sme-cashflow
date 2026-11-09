@@ -40,14 +40,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <BusinessProvider>
       <div className="flex h-screen overflow-hidden bg-[#f8f9ff] dark:bg-[#080f1c]">
-        <div className="hidden w-64 shrink-0 border-r border-slate-200/80 bg-white dark:border-slate-800 dark:bg-[#111c2d] lg:block">
+        <div className="hidden w-64 shrink-0 border-r border-[#203b4a] bg-[#0e2130] lg:block">
           <Sidebar />
         </div>
 
         {sidebarOpen && (
           <div className="fixed inset-0 z-40 lg:hidden">
             <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-            <div className="absolute inset-y-0 left-0 w-72 bg-white shadow-xl dark:bg-[#111c2d]">
+            <div className="absolute inset-y-0 left-0 w-72 bg-[#0e2130] shadow-2xl">
               <Sidebar onNavigate={() => setSidebarOpen(false)} />
             </div>
           </div>
