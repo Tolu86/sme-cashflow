@@ -75,8 +75,8 @@ const PREVIEW_METRICS = [
 function Brand() {
   return (
     <Link href="/" className="inline-flex items-center gap-2.5" aria-label="Cashflow Copilot home">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#00c076] text-[#073c29]">
-        <TrendingUp size={21} strokeWidth={2.5} />
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-0.5 ring-1 ring-slate-200/80 shadow-sm">
+        <img src="/icon.png" alt="" width={40} height={40} className="h-full w-full object-contain" />
       </span>
       <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">Cashflow Copilot</span>
     </Link>
