@@ -171,7 +171,7 @@ export function MobileNavigation() {
           className={cn(
             "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] font-medium",
             pathname.startsWith("/settings")
-              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
+              ? "bg-[#00c076]/15 text-[#65f0b0]"
               : "text-slate-300 hover:bg-white/10 hover:text-white"
           )}
         >
