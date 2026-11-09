@@ -1,4 +1,7 @@
+"use client";
+
 import { Activity } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 
 interface PageHeaderProps {
   title: string;
@@ -6,12 +9,23 @@ interface PageHeaderProps {
 }
 
 /**
- * Shared dark hero for all authenticated workspace tabs.
- * Mirrors the dashboard hero without changing any page behavior.
+ * Dashboard-matched header, with a distinct slide-and-fade entrance.
+ * The route template remounts this component on navigation.
  */
 export function PageHeader({ title, description }: PageHeaderProps) {
+  const reducedMotion = useReducedMotion();
+
   return (
-    <section className="relative overflow-hidden rounded-[28px] bg-[#0e2130] px-6 py-8 text-white shadow-xl shadow-slate-900/10 sm:px-9 sm:py-10">
+    <motion.section
+      initial={reducedMotion ? false : { opacity: 0, y: 28 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: reducedMotion ? 0 : 0.55,
+        delay: reducedMotion ? 0 : 0.08,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      className="relative overflow-hidden rounded-[28px] bg-[#0e2130] px-6 py-8 text-white shadow-xl shadow-slate-900/10 sm:px-9 sm:py-10"
+    >
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -right-20 -top-32 h-80 w-80 rounded-full bg-emerald-400/10 blur-3xl"
@@ -29,6 +43,6 @@ export function PageHeader({ title, description }: PageHeaderProps) {
           </p>
         )}
       </div>
-    </section>
+    </motion.section>
   );
 }
