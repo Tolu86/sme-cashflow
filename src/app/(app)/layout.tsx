@@ -17,6 +17,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Retire legacy appearance preferences across the authenticated app.
+  useEffect(() => {
+    document.documentElement.classList.remove("dark");
+    window.localStorage.removeItem("cashflow-theme");
+  }, []);
+
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
