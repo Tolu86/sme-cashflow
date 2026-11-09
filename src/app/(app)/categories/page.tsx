@@ -2,7 +2,7 @@
 
 import { PageHeader } from "@/components/ui/page-header";
 import { useState } from "react";
-import { Plus, Tag, Trash2 } from "lucide-react";
+import { Plus, Tag, Trash2, ArrowDownLeft, ArrowUpRight, Layers3 } from "lucide-react";
 import { useBusiness } from "@/components/providers/business-provider";
 import { LoadingScreen, EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -85,14 +85,30 @@ export default function CategoriesPage() {
   if (loading || !business) return <LoadingScreen label="Loading categories..." />;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Categories"
-        description="Organize your income and expenses."
-      />
+    <div className="space-y-7 pb-8">
+      <PageHeader title="Categories" description="Bring structure to your transactions with income and expense categories." />
 
-      <CategorySection title="Expense categories" categories={expense} onAdd={() => openAdd("expense")} onEdit={openEdit} onDelete={remove} />
-      <CategorySection title="Income categories" categories={income} onAdd={() => openAdd("income")} onEdit={openEdit} onDelete={remove} />
+      <div className="grid gap-4 sm:grid-cols-3">
+        {[
+          { label: "Total categories", value: categories.length, icon: Layers3, detail: "All classifications" },
+          { label: "Expense categories", value: expense.length, icon: ArrowUpRight, detail: "Track business spending" },
+          { label: "Income categories", value: income.length, icon: ArrowDownLeft, detail: "Organize revenue streams" },
+        ].map(({ label, value, icon: Icon, detail }) => (
+          <div key={label} className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-medium text-slate-500">{label}</p>
+              <span className="rounded-xl bg-emerald-50 p-2.5 text-emerald-700"><Icon size={18} /></span>
+            </div>
+            <p className="mt-4 text-3xl font-semibold tabular-nums tracking-tight text-slate-900">{value}</p>
+            <p className="mt-1 text-xs text-slate-500">{detail}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid items-start gap-5 xl:grid-cols-2">
+        <CategorySection title="Expense categories" categories={expense} onAdd={() => openAdd("expense")} onEdit={openEdit} onDelete={remove} />
+        <CategorySection title="Income categories" categories={income} onAdd={() => openAdd("income")} onEdit={openEdit} onDelete={remove} />
+      </div>
 
       {categories.length === 0 && (
         <EmptyState icon={<Tag size={28} />} title="No categories yet" description="Add some categories to organize your transactions." />
@@ -142,10 +158,14 @@ function CategorySection({
   onDelete: (c: Category) => void;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <Button variant="ghost" size="sm" onClick={onAdd}>
+    <Card className="relative overflow-hidden">
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-300 to-transparent" />
+      <CardHeader className="pt-1">
+        <div className="flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Tag size={17} /></span>
+          <div><CardTitle>{title}</CardTitle><p className="mt-0.5 text-xs text-slate-500">{categories.length} available</p></div>
+        </div>
+        <Button variant="secondary" size="sm" onClick={onAdd}>
           <Plus size={16} />
           Add
         </Button>
@@ -157,16 +177,16 @@ function CategorySection({
           {categories.map((c) => (
             <div
               key={c.id}
-              className="group flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-1.5 dark:border-zinc-700"
+              className="group flex max-w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2 transition hover:border-emerald-200 hover:bg-emerald-50/50"
             >
               <button
                 onClick={() => onEdit(c)}
-                className={cn("text-sm font-medium text-zinc-700 hover:text-emerald-600 dark:text-zinc-300")}
+                className={cn("truncate text-left text-sm font-semibold text-slate-700 hover:text-emerald-700")}
               >
                 {c.name}
               </button>
               {!c.isDefault && (
-                <button onClick={() => onDelete(c)} className="text-zinc-400 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100">
+                <button onClick={() => onDelete(c)} className="rounded-md p-1 text-slate-400 transition hover:bg-red-50 hover:text-red-500 sm:opacity-40 sm:group-hover:opacity-100" title={`Delete ${c.name}`} aria-label={`Delete ${c.name}`}>
                   <Trash2 size={14} />
                 </button>
               )}
