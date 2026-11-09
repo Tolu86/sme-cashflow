@@ -112,7 +112,7 @@ export default function DashboardPage() {
       </div>
 
       {summary && (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-4">
           {[
             { label: "Current cash balance", value: summary.currentBalance, icon: Wallet, tone: "emerald" },
             { label: "Cash inflow · 30 days", value: summary.income, icon: ArrowUpRight, tone: "sky" },
@@ -121,12 +121,12 @@ export default function DashboardPage() {
           ].map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.label} className="group rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-[#142333]">
+              <div key={item.label} className="group min-w-[235px] flex-[0_0_82%] snap-start rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-[#142333] sm:min-w-0 sm:flex-auto">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{item.label}</p>
                   <span className="rounded-xl bg-emerald-50 p-2.5 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400"><Icon size={17} /></span>
                 </div>
-                <p className="mt-6 break-words text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">{formatMoney(item.value, currency)}</p>
+                <p className="mt-6 break-words text-2xl font-semibold tabular-nums tracking-tight text-slate-900 dark:text-white">{formatMoney(item.value, currency)}</p>
                 <div className="mt-5 h-1 w-12 rounded-full bg-emerald-400/80" />
               </div>
             );
