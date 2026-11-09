@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { motion, useReducedMotion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { LoadingScreen } from "@/components/ui/empty-state";
 import { useAuth } from "@/components/providers/auth-provider";
 import { BusinessProvider } from "@/components/providers/business-provider";
@@ -16,8 +15,6 @@ import { TrialBanner } from "@/components/layout/trial-banner";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, profile } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
-  const reduceMotion = useReducedMotion();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Retire legacy appearance preferences across the authenticated app.
@@ -64,20 +61,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {!profile?.businessId ? (
                 <OnboardingWizard />
               ) : (
-                <SetupGuide>
-                  {pathname === "/dashboard" ? (
-                    children
-                  ) : (
-                    <motion.div
-                      key={pathname}
-                      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: reduceMotion ? 0 : 0.4 }}
-                    >
-                      {children}
-                    </motion.div>
-                  )}
-                </SetupGuide>
+                <SetupGuide>{children}</SetupGuide>
               )}
             </div>
           </main>
