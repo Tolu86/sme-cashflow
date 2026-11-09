@@ -13,7 +13,6 @@ import {
   Check,
   Shield,
   UserCircle,
-  Palette,
   Database,
   CircleHelp,
   LockKeyhole,
@@ -61,7 +60,6 @@ type SettingsSection =
   | "business"
   | "security"
   | "notifications"
-  | "appearance"
   | "privacy"
   | "subscription"
   | "faq";
@@ -176,10 +174,7 @@ const [verificationSending, setVerificationSending] =
   const [accountStatus, setAccountStatus] =
     useState<string | null>(null);
 
-  const [theme, setTheme] =
-  useState<"system" | "light" | "dark">("system");
-
-  const [openFaq, setOpenFaq] =
+const [openFaq, setOpenFaq] =
     useState<number | null>(null);
 
   const current = planMeta(
@@ -224,53 +219,6 @@ const [verificationSending, setVerificationSending] =
     profile?.displayName,
     user?.displayName,
   ]);
-
-  /*
-   * Load saved theme.
-   */
-  useEffect(() => {
-    const savedTheme =
-      window.localStorage.getItem(
-        "cashflow-theme"
-      );
-
-    if (
-      savedTheme === "light" ||
-      savedTheme === "dark" ||
-      savedTheme === "system"
-    ) {
-      setTheme(savedTheme);
-    }
-  }, []);
-
-  /*
-   * Apply selected theme.
-   */
-  useEffect(() => {
-    const root =
-      document.documentElement;
-
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else if (theme === "light") {
-      root.classList.remove("dark");
-    } else {
-      const prefersDark =
-        window.matchMedia(
-          "(prefers-color-scheme: dark)"
-        ).matches;
-
-      root.classList.toggle(
-        "dark",
-        prefersDark
-      );
-    }
-
-    window.localStorage.setItem(
-      "cashflow-theme",
-      theme
-    );
-  }, [theme]);
 
   /*
    * Verify Paystack payment after returning
@@ -1604,12 +1552,7 @@ async function signOutAllDevices() {
       label: "Notifications",
       icon: Bell,
     },
-    {
-      id: "appearance",
-      label: "Appearance",
-      icon: Palette,
-    },
-    {
+{
       id: "privacy",
       label: "Data & Privacy",
       icon: Database,
@@ -2601,92 +2544,6 @@ async function signOutAllDevices() {
                       : "Save notification settings"}
                   </Button>
                 </form>
-              </Card>
-            </div>
-          )}
-
-          {/* APPEARANCE */}
-          {activeSection ===
-            "appearance" && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Palette className="h-5 w-5" />
-                    Appearance
-                  </CardTitle>
-                </CardHeader>
-
-                <div className="space-y-5 p-6 pt-0">
-                  <p className="text-sm text-muted-foreground">
-                    Choose how Cashflow Copilot should appear on your device.
-                  </p>
-
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    {[
-                      {
-                        value:
-                          "system" as const,
-                        label: "System",
-                        description:
-                          "Follow your device setting.",
-                      },
-                      {
-                        value:
-                          "light" as const,
-                        label: "Light",
-                        description:
-                          "Use the light appearance.",
-                      },
-                      {
-                        value:
-                          "dark" as const,
-                        label: "Dark",
-                        description:
-                          "Use the dark appearance.",
-                      },
-                    ].map(
-                      (option) => (
-                        <button
-                          key={
-                            option.value
-                          }
-                          type="button"
-                          onClick={() =>
-                            setTheme(
-                              option.value
-                            )
-                          }
-                          className={`rounded-lg border p-4 text-left transition ${
-                            theme ===
-                            option.value
-                              ? "border-primary bg-primary/5"
-                              : "hover:bg-muted"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">
-                              {
-                                option.label
-                              }
-                            </span>
-
-                            {theme ===
-                              option.value && (
-                              <Check className="h-4 w-4 text-primary" />
-                            )}
-                          </div>
-
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            {
-                              option.description
-                            }
-                          </p>
-                        </button>
-                      )
-                    )}
-                  </div>
-                </div>
               </Card>
             </div>
           )}
