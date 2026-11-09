@@ -27,14 +27,14 @@ export function TransactionRow({ transaction, currency }: { transaction: Transac
   return (
     <Link
       href={`/transactions?edit=${transaction.id}`}
-      className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+      className="flex items-center gap-3 px-4 py-4 transition-colors hover:bg-emerald-50/40 sm:gap-4 sm:px-5"
     >
       <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full", meta.bg, meta.accent)}>
         <Icon size={16} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{displayName}</p>
-        <p className="text-xs text-zinc-500">
+        <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
+        <p className="mt-1 truncate text-xs text-slate-500">
           {formatDate(transaction.date)}
           {categoryName(categories, transaction.categoryId) !== "Uncategorized" && ` · ${categoryName(categories, transaction.categoryId)}`}
           {meta.label !== "Transfer" && ` · ${meta.label}`}
@@ -45,7 +45,7 @@ export function TransactionRow({ transaction, currency }: { transaction: Transac
       )}
       <p
         className={cn(
-          "shrink-0 text-sm font-semibold tabular-nums",
+          "max-w-[45%] shrink-0 break-words text-right text-sm font-semibold tabular-nums",
           transaction.type === "income"
             ? "text-emerald-600 dark:text-emerald-400"
             : transaction.type === "expense"
