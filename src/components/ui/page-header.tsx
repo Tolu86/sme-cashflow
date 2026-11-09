@@ -1,20 +1,34 @@
+import { Activity } from "lucide-react";
+
 interface PageHeaderProps {
   title: string;
   description?: string;
 }
 
+/**
+ * Shared dark hero for all authenticated workspace tabs.
+ * Mirrors the dashboard hero without changing any page behavior.
+ */
 export function PageHeader({ title, description }: PageHeaderProps) {
   return (
-    <div className="relative overflow-hidden rounded-[24px] border border-emerald-100/80 bg-gradient-to-r from-white via-[#f8fbff] to-[#eaf8f1] px-5 py-6 shadow-sm sm:px-8 sm:py-8">
-      <div className="pointer-events-none absolute -right-14 -top-24 h-48 w-48 rounded-full bg-emerald-200/35 blur-3xl" />
+    <section className="relative overflow-hidden rounded-[28px] bg-[#0e2130] px-6 py-8 text-white shadow-xl shadow-slate-900/10 sm:px-9 sm:py-10">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-20 -top-32 h-80 w-80 rounded-full bg-emerald-400/10 blur-3xl"
+      />
       <div className="relative">
-        <p className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#00c076]" />
-          Financial workspace
-        </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
-        {description && <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{description}</p>}
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-300">
+          <Activity size={13} aria-hidden="true" /> Financial workspace
+        </div>
+        <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          {title}
+        </h1>
+        {description && (
+          <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300 sm:text-base">
+            {description}
+          </p>
+        )}
       </div>
-    </div>
+    </section>
   );
 }
