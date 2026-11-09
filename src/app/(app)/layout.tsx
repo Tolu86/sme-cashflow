@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { LoadingScreen } from "@/components/ui/empty-state";
 import { useAuth } from "@/components/providers/auth-provider";
 import { BusinessProvider } from "@/components/providers/business-provider";
-import { Sidebar } from "@/components/layout/sidebar";
+import { Sidebar, MobileNavigation } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { OnboardingTour } from "@/components/onboarding/tour";
@@ -50,11 +50,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar onMenuClick={() => setSidebarOpen(true)} />
           <TrialBanner />
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto pb-24 lg:pb-0">
             <div className="mx-auto w-full max-w-[1280px] px-4 py-6 sm:px-6 lg:px-8">
               {!profile?.businessId ? <OnboardingWizard /> : <SetupGuide>{children}</SetupGuide>}
             </div>
           </main>
+          <MobileNavigation />
         </div>
       </div>
 
