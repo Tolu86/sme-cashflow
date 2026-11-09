@@ -14,6 +14,7 @@ import { auth } from "@/lib/firebase/client";
 import { useBusiness } from "@/components/providers/business-provider";
 import { cn } from "@/lib/cn";
 import { Spinner } from "@/components/ui/button";
+import { isTrialActive } from "@/lib/plans";
 
 interface Msg {
   role: "user" | "assistant";
@@ -36,7 +37,8 @@ export function CopilotChat() {
 
   const isPro =
     business?.plan === "pro" ||
-    business?.plan === "premium";
+    business?.plan === "premium" ||
+    (business ? isTrialActive(business.trialEndsAt) : false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
@@ -130,7 +132,7 @@ export function CopilotChat() {
 
   if (!isPro) {
     return (
-      <div className="flex min-h-[480px] flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 text-center dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex min-h-[480px] flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white px-6 text-center shadow-sm">
         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
           <Lock
             size={22}
@@ -166,9 +168,9 @@ export function CopilotChat() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-13rem)] min-h-[480px] flex-col rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex items-center gap-2 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-white">
+    <div className="flex h-[560px] min-h-[480px] flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm sm:h-[640px]">
+      <div className="flex items-center gap-3 border-b border-slate-100 bg-[#f5faf7] px-5 py-4 sm:px-6">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#00c076] text-[#073c29]">
           <Bot size={18} />
         </div>
 
@@ -183,7 +185,7 @@ export function CopilotChat() {
         </div>
       </div>
 
-      <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+      <div className="flex-1 space-y-4 overflow-y-auto bg-white px-4 py-5 sm:px-6">
         {messages.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center text-center">
             <Sparkles
@@ -198,12 +200,12 @@ export function CopilotChat() {
               of these:
             </p>
 
-            <div className="mt-4 flex max-w-md flex-col gap-2">
+            <div className="mt-5 grid w-full max-w-lg gap-2 sm:grid-cols-2">
               {SUGGESTIONS.map((s) => (
                 <button
                   key={s}
                   onClick={() => send(s)}
-                  className="rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-600 transition-colors hover:border-emerald-400 hover:text-emerald-600 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-emerald-500 dark:hover:text-emerald-400"
+                  className="rounded-xl border border-emerald-100 bg-emerald-50/50 px-4 py-3 text-left text-xs font-medium text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
                 >
                   {s}
                 </button>
@@ -234,11 +236,11 @@ export function CopilotChat() {
           e.preventDefault();
           send(input);
         }}
-        className="border-t border-zinc-200 p-4 dark:border-zinc-800"
+        className="border-t border-slate-100 bg-[#fbfdfc] p-4 sm:p-5"
       >
         <div
           data-tour="copilot-input"
-          className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3 py-2 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-900"
+          className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-100"
         >
           <textarea
             value={input}
@@ -264,7 +266,7 @@ export function CopilotChat() {
             disabled={
               loading || !input.trim()
             }
-            className="shrink-0 rounded-lg bg-emerald-500 p-2 text-white transition-colors hover:bg-emerald-600 disabled:pointer-events-none disabled:opacity-40"
+            className="shrink-0 rounded-xl bg-[#00c076] p-2.5 text-[#073c29] transition hover:bg-emerald-300 disabled:pointer-events-none disabled:opacity-40"
           >
             <SendHorizonal size={18} />
           </button>
@@ -306,8 +308,8 @@ function MessageBubble({
         className={cn(
           "max-w-[85%] whitespace-pre-wrap rounded-xl px-4 py-2.5 text-sm leading-relaxed",
           msg.role === "assistant"
-            ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-            : "bg-emerald-500 text-white"
+            ? "rounded-bl-md bg-slate-100 text-slate-900"
+            : "rounded-br-md bg-[#007a52] text-white"
         )}
         dangerouslySetInnerHTML={{
           __html: renderMarkdown(

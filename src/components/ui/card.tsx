@@ -8,8 +8,8 @@ export function Card({ className, padding = true, children, ...props }: CardProp
   return (
     <div
       className={cn(
-        "rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900",
-        padding && "p-6",
+        "min-w-0 rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-950/[0.025]",
+        padding && "p-5 sm:p-6",
         className
       )}
       {...props}
@@ -21,7 +21,10 @@ export function Card({ className, padding = true, children, ...props }: CardProp
 
 export function CardHeader({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("mb-4 flex items-center justify-between", className)} {...props}>
+    <div
+      className={cn("mb-5 flex flex-wrap items-center justify-between gap-3", className)}
+      {...props}
+    >
       {children}
     </div>
   );
@@ -29,10 +32,7 @@ export function CardHeader({ className, children, ...props }: React.HTMLAttribut
 
 export function CardTitle({ className, children, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <h3
-      className={cn("text-sm font-semibold text-zinc-900 dark:text-zinc-100", className)}
-      {...props}
-    >
+    <h3 className={cn("text-sm font-semibold tracking-tight text-slate-900 sm:text-base", className)} {...props}>
       {children}
     </h3>
   );

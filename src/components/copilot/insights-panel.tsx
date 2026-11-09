@@ -8,6 +8,7 @@ import { useBusiness } from "@/components/providers/business-provider";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { isTrialActive } from "@/lib/plans";
 import {
   Lightbulb,
   TrendingDown,
@@ -36,7 +37,8 @@ export function InsightsPanel() {
 
   const isPro =
     business?.plan === "pro" ||
-    business?.plan === "premium";
+    business?.plan === "premium" ||
+    (business ? isTrialActive(business.trialEndsAt) : false);
 
   useEffect(() => {
     async function run() {
@@ -169,7 +171,7 @@ export function InsightsPanel() {
           see analysis.
         </p>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {findings.map((f, i) => {
             const meta =
               toneMeta[f.tone] ??
@@ -180,9 +182,9 @@ export function InsightsPanel() {
             return (
               <div
                 key={i}
-                className="flex gap-3"
+                className="flex gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4"
               >
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 dark:bg-zinc-800">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
                   <Icon size={16} />
                 </div>
 

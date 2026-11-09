@@ -3,7 +3,7 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, ArrowLeftRight, Upload } from "lucide-react";
+import { Plus, Search, ArrowLeftRight, Upload, ArrowDownLeft, ArrowUpRight, TrendingUp, Filter } from "lucide-react";
 import { useBusiness } from "@/components/providers/business-provider";
 import { LoadingScreen, EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -13,10 +13,13 @@ import { TransactionRow } from "@/components/transactions/transaction-row";
 import { TransactionForm } from "@/components/transactions/transaction-form";
 import { categoryName } from "@/lib/lookup";
 import type { Transaction } from "@/types";
+import { formatMoney } from "@/lib/money";
 
 export default function TransactionsPage() {
   const { business, transactions, accounts, categories, loading } = useBusiness();
   const currency = business?.currency ?? "USD";
+  const incomeTotal = transactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0);
+  const expenseTotal = transactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
@@ -90,32 +93,43 @@ export default function TransactionsPage() {
   if (loading || !business) return <LoadingScreen label="Loading transactions..." />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <PageHeader
-          title="Transactions"
-          description="All the money coming in and going out."
-        />
-        <div className="flex gap-2">
+    <div className="space-y-7 pb-8">
+      <div className="space-y-4">
+        <PageHeader title="Transactions" description="A clear view of every payment, expense, and transfer moving through your business." />
+        <div className="flex flex-wrap justify-end gap-2">
           <Link href="/import">
-            <Button variant="secondary">
-              <Upload size={16} />
-              Import CSV
-            </Button>
+            <Button variant="secondary"><Upload size={16} /> Import CSV</Button>
           </Link>
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus size={16} />
-            Add transaction
+          <Button onClick={() => { setEditing(null); setFormOpen(true); }}>
+            <Plus size={16} /> Add transaction
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 rounded-xl border border-zinc-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          { label: "Transactions recorded", value: transactions.length.toLocaleString(), icon: ArrowLeftRight, detail: "All activity" },
+          { label: "Total cash inflow", value: formatMoney(incomeTotal, currency), icon: ArrowDownLeft, detail: "Recorded income" },
+          { label: "Total cash outflow", value: formatMoney(expenseTotal, currency), icon: ArrowUpRight, detail: "Recorded expenses" },
+          { label: "Net cash movement", value: formatMoney(incomeTotal - expenseTotal, currency), icon: TrendingUp, detail: "Income less expenses" },
+        ].map(({ label, value, icon: Icon, detail }) => (
+          <div key={label} className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-xs font-medium text-slate-500">{label}</p>
+              <span className="rounded-xl bg-emerald-50 p-2.5 text-emerald-700"><Icon size={18} /></span>
+            </div>
+            <p className="mt-4 break-words text-2xl font-semibold tabular-nums tracking-tight text-slate-900">{value}</p>
+            <p className="mt-1 text-xs text-slate-500">{detail}</p>
+            <div className="mt-4 h-1 w-10 rounded-full bg-[#00c076]" />
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Filter size={17} className="text-emerald-600" />
+        <h2 className="text-base font-semibold text-slate-900">Search & filter</h2>
+      </div>
+      <div className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 sm:p-5">
         <div className="lg:col-span-2">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
@@ -217,11 +231,11 @@ export default function TransactionsPage() {
           }
         />
       ) : (
-        <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="border-b border-zinc-200 px-5 py-3 text-xs font-medium text-zinc-500 dark:border-zinc-800">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+          <p className="border-b border-slate-100 bg-slate-50/60 px-5 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">
             {filtered.length} transaction{filtered.length === 1 ? "" : "s"}
           </p>
-          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+          <div className="divide-y divide-slate-100">
             {filtered.map((t) => (
               <TransactionRow key={t.id} transaction={t} currency={currency} />
             ))}

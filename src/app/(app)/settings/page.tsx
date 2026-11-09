@@ -13,7 +13,6 @@ import {
   Check,
   Shield,
   UserCircle,
-  Palette,
   Database,
   CircleHelp,
   LockKeyhole,
@@ -61,7 +60,6 @@ type SettingsSection =
   | "business"
   | "security"
   | "notifications"
-  | "appearance"
   | "privacy"
   | "subscription"
   | "faq";
@@ -176,10 +174,7 @@ const [verificationSending, setVerificationSending] =
   const [accountStatus, setAccountStatus] =
     useState<string | null>(null);
 
-  const [theme, setTheme] =
-  useState<"system" | "light" | "dark">("system");
-
-  const [openFaq, setOpenFaq] =
+const [openFaq, setOpenFaq] =
     useState<number | null>(null);
 
   const current = planMeta(
@@ -224,53 +219,6 @@ const [verificationSending, setVerificationSending] =
     profile?.displayName,
     user?.displayName,
   ]);
-
-  /*
-   * Load saved theme.
-   */
-  useEffect(() => {
-    const savedTheme =
-      window.localStorage.getItem(
-        "cashflow-theme"
-      );
-
-    if (
-      savedTheme === "light" ||
-      savedTheme === "dark" ||
-      savedTheme === "system"
-    ) {
-      setTheme(savedTheme);
-    }
-  }, []);
-
-  /*
-   * Apply selected theme.
-   */
-  useEffect(() => {
-    const root =
-      document.documentElement;
-
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else if (theme === "light") {
-      root.classList.remove("dark");
-    } else {
-      const prefersDark =
-        window.matchMedia(
-          "(prefers-color-scheme: dark)"
-        ).matches;
-
-      root.classList.toggle(
-        "dark",
-        prefersDark
-      );
-    }
-
-    window.localStorage.setItem(
-      "cashflow-theme",
-      theme
-    );
-  }, [theme]);
 
   /*
    * Verify Paystack payment after returning
@@ -1604,12 +1552,7 @@ async function signOutAllDevices() {
       label: "Notifications",
       icon: Bell,
     },
-    {
-      id: "appearance",
-      label: "Appearance",
-      icon: Palette,
-    },
-    {
+{
       id: "privacy",
       label: "Data & Privacy",
       icon: Database,
@@ -1664,17 +1607,28 @@ async function signOutAllDevices() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-7xl space-y-7 pb-8">
       <PageHeader
         title="Settings"
-        description="Manage your account and business preferences."
+        description="Manage your business, security, subscription, and account preferences in one place."
       />
 
-      <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white px-5 py-4 shadow-sm sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Building2 size={20} /></span>
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">Your workspace</p>
+            <p className="truncate text-sm font-semibold text-slate-900">{business?.name ?? "Your business"}</p>
+          </div>
+        </div>
+        <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-100">{current.name} plan</span>
+      </div>
+
+      <div className="grid items-start gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
         {/* SETTINGS NAVIGATION */}
-        <Card className="h-fit text-zinc-900 dark:text-zinc-100">
+        <Card padding={false} className="h-fit lg:sticky lg:top-5">
           <div className="p-2">
-            <nav className="space-y-1">
+            <nav className="flex gap-1.5 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0" aria-label="Settings sections">
               {settingsItems.map(
                 (item) => {
                   const Icon =
@@ -1688,15 +1642,16 @@ async function signOutAllDevices() {
                     <button
                       key={item.id}
                       type="button"
+                      aria-pressed={active}
                       onClick={() =>
                         setActiveSection(
                           item.id
                         )
                       }
-                      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition ${
+                      className={`flex shrink-0 items-center gap-3 whitespace-nowrap rounded-xl px-4 py-3 text-left text-sm font-semibold transition lg:w-full ${
                         active
-                          ? "bg-primary text-white"
-                          : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
+                          ? "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-100"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-emerald-700"
                       }`}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
@@ -1713,7 +1668,15 @@ async function signOutAllDevices() {
         </Card>
 
         {/* SETTINGS CONTENT */}
-        <div className="min-w-0 text-zinc-900 dark:text-zinc-100">
+        <div className="min-w-0 text-slate-900">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-700">Preferences</p>
+              <h2 className="mt-1 text-lg font-semibold tracking-tight text-slate-900">
+                {settingsItems.find((item) => item.id === activeSection)?.label}
+              </h2>
+            </div>
+          </div>
 
           {/* ACCOUNT */}
           {activeSection ===
@@ -1730,7 +1693,7 @@ async function signOutAllDevices() {
                   onSubmit={
                     saveAccount
                   }
-                  className="space-y-5 p-6 pt-0"
+                  className="space-y-5"
                 >
                   <div className="space-y-2">
                     <label className="text-sm font-medium">
@@ -1881,7 +1844,7 @@ async function signOutAllDevices() {
                   onSubmit={
                     saveDetails
                   }
-                  className="space-y-5 p-6 pt-0"
+                  className="space-y-5"
                 >
                   <div className="space-y-2">
                     <label className="text-sm font-medium">
@@ -2224,7 +2187,7 @@ async function signOutAllDevices() {
                   </CardTitle>
                 </CardHeader>
 
-                <div className="space-y-5 p-6 pt-0">
+                <div className="space-y-5">
                   <form
                     onSubmit={
                       addVendor
@@ -2390,7 +2353,7 @@ async function signOutAllDevices() {
                   onSubmit={
                     setPassword
                   }
-                  className="space-y-5 p-6 pt-0"
+                  className="space-y-5"
                 >
                   <p className="text-sm text-muted-foreground">
                     Change your account password. For security, you may be asked to sign in again before changing it.
@@ -2550,7 +2513,7 @@ async function signOutAllDevices() {
                   onSubmit={
                     saveNotifications
                   }
-                  className="space-y-5 p-6 pt-0"
+                  className="space-y-5"
                 >
                   <p className="text-sm text-muted-foreground">
                     Configure when your account should warn you about low balances.
@@ -2605,92 +2568,6 @@ async function signOutAllDevices() {
             </div>
           )}
 
-          {/* APPEARANCE */}
-          {activeSection ===
-            "appearance" && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Palette className="h-5 w-5" />
-                    Appearance
-                  </CardTitle>
-                </CardHeader>
-
-                <div className="space-y-5 p-6 pt-0">
-                  <p className="text-sm text-muted-foreground">
-                    Choose how Cashflow Copilot should appear on your device.
-                  </p>
-
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    {[
-                      {
-                        value:
-                          "system" as const,
-                        label: "System",
-                        description:
-                          "Follow your device setting.",
-                      },
-                      {
-                        value:
-                          "light" as const,
-                        label: "Light",
-                        description:
-                          "Use the light appearance.",
-                      },
-                      {
-                        value:
-                          "dark" as const,
-                        label: "Dark",
-                        description:
-                          "Use the dark appearance.",
-                      },
-                    ].map(
-                      (option) => (
-                        <button
-                          key={
-                            option.value
-                          }
-                          type="button"
-                          onClick={() =>
-                            setTheme(
-                              option.value
-                            )
-                          }
-                          className={`rounded-lg border p-4 text-left transition ${
-                            theme ===
-                            option.value
-                              ? "border-primary bg-primary/5"
-                              : "hover:bg-muted"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">
-                              {
-                                option.label
-                              }
-                            </span>
-
-                            {theme ===
-                              option.value && (
-                              <Check className="h-4 w-4 text-primary" />
-                            )}
-                          </div>
-
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            {
-                              option.description
-                            }
-                          </p>
-                        </button>
-                      )
-                    )}
-                  </div>
-                </div>
-              </Card>
-            </div>
-          )}
-
           {/* DATA & PRIVACY */}
           {activeSection ===
             "privacy" && (
@@ -2703,7 +2580,7 @@ async function signOutAllDevices() {
                   </CardTitle>
                 </CardHeader>
 
-                <div className="space-y-5 p-6 pt-0">
+                <div className="space-y-5">
                   <div className="rounded-lg border p-4">
                     <h3 className="text-sm font-medium">
                       Your business data
@@ -2774,7 +2651,7 @@ async function signOutAllDevices() {
                   </CardTitle>
                 </CardHeader>
 
-                <div className="space-y-5 p-6 pt-0">
+                <div className="space-y-5">
                   <div className="rounded-lg border p-4">
                     <p className="text-xs text-muted-foreground">
                       Current plan

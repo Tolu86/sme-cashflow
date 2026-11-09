@@ -8,13 +8,13 @@ type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-emerald-500 text-white hover:bg-emerald-600 focus-visible:outline-emerald-500",
+    "bg-[#00c076] text-[#073c29] shadow-sm shadow-emerald-900/10 hover:bg-emerald-300 focus-visible:outline-emerald-600",
   secondary:
-    "bg-white text-zinc-900 ring-1 ring-inset ring-zinc-300 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700 dark:hover:bg-zinc-700",
+    "bg-white text-slate-700 ring-1 ring-inset ring-slate-200 hover:bg-slate-50 hover:ring-emerald-200",
   ghost:
-    "bg-transparent text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800",
+    "bg-transparent text-slate-600 hover:bg-emerald-50 hover:text-emerald-700",
   outline:
-    "bg-transparent text-emerald-600 ring-1 ring-inset ring-emerald-500 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950",
+    "bg-white text-emerald-700 ring-1 ring-inset ring-emerald-200 hover:bg-emerald-50",
   danger:
     "bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600",
 };
@@ -37,7 +37,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center rounded-lg font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center rounded-xl font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-50",
           variants[variant],
           sizes[size],
           className

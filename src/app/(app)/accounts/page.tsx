@@ -2,7 +2,7 @@
 
 import { PageHeader } from "@/components/ui/page-header";
 import { useState } from "react";
-import { Plus, Landmark, Banknote, CreditCard, Trash2 } from "lucide-react";
+import { Plus, Landmark, Banknote, CreditCard, Trash2, Wallet, ArrowLeftRight } from "lucide-react";
 import { useBusiness } from "@/components/providers/business-provider";
 import { LoadingScreen, EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ export default function AccountsPage() {
   const [saving, setSaving] = useState(false);
 
   const currency = business?.currency ?? "USD";
+  const totalBalance = accounts.reduce((sum, account) => sum + accountBalance(account, transactions, account.id), 0);
 
   async function create() {
     if (!business?.id) return;
@@ -72,16 +73,34 @@ export default function AccountsPage() {
   if (loading || !business) return <LoadingScreen label="Loading accounts..." />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <PageHeader
-          title="Accounts"
-          description="Manage your business accounts."
-        />
-        <Button onClick={() => setOpen(true)}>
-          <Plus size={16} />
-          Add account
-        </Button>
+    <div className="space-y-7 pb-8">
+      <div className="space-y-4">
+        <PageHeader title="Accounts" description="All your business accounts and balances, organized in one financial workspace." />
+        <div className="flex justify-end">
+          <Button onClick={() => setOpen(true)}><Plus size={16} /> Add account</Button>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        {[
+          { label: "Total account balance", value: formatMoney(totalBalance, currency), icon: Wallet, detail: "Combined balances" },
+          { label: "Connected accounts", value: accounts.length.toLocaleString(), icon: Landmark, detail: "Tracked in your workspace" },
+          { label: "Recorded transactions", value: transactions.length.toLocaleString(), icon: ArrowLeftRight, detail: "Across all accounts" },
+        ].map(({ label, value, icon: Icon, detail }) => (
+          <div key={label} className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-medium text-slate-500">{label}</p>
+              <span className="rounded-xl bg-emerald-50 p-2.5 text-emerald-700"><Icon size={18} /></span>
+            </div>
+            <p className="mt-4 break-words text-2xl font-semibold tabular-nums tracking-tight text-slate-900">{value}</p>
+            <p className="mt-1 text-xs text-slate-500">{detail}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold tracking-tight text-slate-900">Your accounts</h2>
+        <span className="text-xs font-medium text-slate-500">{accounts.length} total</span>
       </div>
 
       {accounts.length === 0 ? (
@@ -92,16 +111,17 @@ export default function AccountsPage() {
           action={<Button onClick={() => setOpen(true)}><Plus size={16} />Add account</Button>}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {accounts.map((a) => {
             const Icon = TYPE_ICONS[a.type];
             const balance = accountBalance(a, transactions, a.id);
             const txCount = transactions.filter((t) => t.accountId === a.id).length;
             return (
-              <Card key={a.id}>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800">
+              <Card key={a.id} className="group relative overflow-hidden transition-shadow hover:shadow-md">
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-300" />
+                <CardHeader className="pt-1">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
                       <Icon size={18} />
                     </div>
                     <CardTitle className="capitalize">{a.type} account</CardTitle>
@@ -114,11 +134,11 @@ export default function AccountsPage() {
                     <Trash2 size={16} />
                   </button>
                 </CardHeader>
-                <p className="truncate text-lg font-semibold text-zinc-900 dark:text-zinc-100">{a.name}</p>
-                <p className={`text-2xl font-bold tabular-nums ${balance < 0 ? "text-red-500" : "text-zinc-900 dark:text-zinc-50"}`}>
+                <p className="truncate text-base font-semibold text-slate-900">{a.name}</p>
+                <p className={`mt-2 break-words text-3xl font-semibold tracking-tight tabular-nums ${balance < 0 ? "text-red-500" : "text-slate-900"}`}>
                   {formatMoney(balance, currency)}
                 </p>
-                <p className="mt-1 text-xs text-zinc-500">{txCount} transactions</p>
+                <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><span className="text-xs font-medium text-slate-500">Transactions</span><span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">{txCount}</span></div>
               </Card>
             );
           })}

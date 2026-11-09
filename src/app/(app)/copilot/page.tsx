@@ -8,6 +8,7 @@ import {
   Lightbulb,
   Lock,
   ArrowUpRight,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { CopilotChat } from "@/components/copilot/chat";
@@ -41,15 +42,15 @@ export default function CopilotPage() {
 
   if (!isPro) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-7 pb-8">
         <PageHeader
           title="Cashflow Copilot"
           description="Get AI-powered insights about your business."
         />
 
-        <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-8 shadow-sm">
           <div className="max-w-md text-center">
-            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50">
               <Lock
                 size={28}
                 className="text-emerald-600 dark:text-emerald-400"
@@ -68,7 +69,7 @@ export default function CopilotPage() {
 
             <Link
               href="/settings"
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#00c076] px-5 py-3 text-sm font-semibold text-[#073c29] transition-colors hover:bg-emerald-300"
             >
               Upgrade to Pro
               <ArrowUpRight size={16} />
@@ -84,32 +85,45 @@ export default function CopilotPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1
-  className="text-2xl font-bold"
-  style={{ color: "var(--foreground)" }}
->
-  AI Copilot
-</h1>
-        <p className="text-sm text-zinc-500">
-          Your AI finance assistant with live data from {business.name}.
-        </p>
+    <div className="space-y-7 pb-8">
+      <PageHeader
+        title="AI Copilot"
+        description={`Your financial assistant for ${business.name}. Explore cash flow, forecasts, and insights in one workspace.`}
+      />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        {[
+          { label: "Ask a question", detail: "Understand your finances", icon: Bot },
+          { label: "Explore forecasts", detail: "Plan the next 30 days", icon: TrendingUp },
+          { label: "Discover insights", detail: "Spot spending patterns", icon: Lightbulb },
+        ].map(({ label, detail, icon: Icon }) => (
+          <div key={label} className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+            <span className="rounded-xl bg-emerald-50 p-3 text-emerald-700"><Icon size={19} /></span>
+            <div className="min-w-0"><p className="text-sm font-semibold text-slate-900">{label}</p><p className="mt-0.5 text-xs text-slate-500">{detail}</p></div>
+          </div>
+        ))}
       </div>
 
-      <div className="flex flex-wrap gap-1 rounded-xl border border-zinc-200 bg-white p-1 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex items-center gap-2">
+        <Sparkles size={17} className="text-emerald-600" />
+        <h2 className="text-base font-semibold text-slate-900">Your assistant workspace</h2>
+      </div>
+
+      <div role="tablist" aria-label="Copilot tools" className="flex flex-wrap gap-2 rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm">
         {TABS.map((t) => {
           const Icon = t.icon;
 
           return (
             <button
               key={t.id}
+              role="tab"
+              aria-selected={tab === t.id}
               onClick={() => setTab(t.id)}
               className={cn(
-                "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                "flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-3 text-xs font-semibold transition-colors sm:flex-none sm:px-5 sm:text-sm",
                 tab === t.id
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                  ? "bg-[#eaf8f1] text-emerald-800 ring-1 ring-emerald-100"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
               )}
             >
               <Icon size={16} />

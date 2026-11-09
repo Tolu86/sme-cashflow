@@ -39,22 +39,22 @@ export function Modal({ open, onClose, title, children, maxWidth = "max-w-md" }:
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm"
       onMouseDown={onBackdrop}
     >
       <div
         ref={panelRef}
         className={cn(
-          "w-full rounded-xl bg-white shadow-xl ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800",
+          "max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200",
           maxWidth
         )}
       >
         {title && (
-          <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{title}</h2>
+          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900">{title}</h2>
             <button
               onClick={onClose}
-              className="rounded-lg p-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
             >
               <X size={18} />
             </button>
