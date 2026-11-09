@@ -126,3 +126,60 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     </div>
   );
 }
+const MOBILE_NAV = [
+  { href: "/dashboard", label: "Overview", icon: LayoutDashboard, feature: "dashboard" as PlanFeature },
+  { href: "/transactions", label: "Activity", icon: ArrowLeftRight, feature: "transactions" as PlanFeature },
+  { href: "/accounts", label: "Accounts", icon: Wallet, feature: "accounts" as PlanFeature },
+  { href: "/copilot", label: "Copilot", icon: Bot, feature: "copilot" as PlanFeature },
+];
+
+export function MobileNavigation() {
+  const pathname = usePathname();
+  const { business } = useBusiness();
+  const visible = MOBILE_NAV.filter((item) =>
+    can(business?.plan, item.feature, business?.trialEndsAt)
+  );
+  return (
+    <nav
+      aria-label="Mobile primary navigation"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/90 bg-white/95 px-2 pt-2 shadow-[0_-8px_28px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-slate-800 dark:bg-[#111c2d]/95 lg:hidden"
+      style={{ paddingBottom: "max(env(safe-area-inset-bottom), 8px)" }}
+    >
+      <div className="mx-auto flex max-w-lg items-center justify-around gap-1">
+        {visible.map((item) => {
+          const Icon = item.icon;
+          const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] font-medium transition-colors",
+                active
+                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
+                  : "text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800"
+              )}
+            >
+              <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+        <Link
+          href="/settings"
+          aria-current={pathname.startsWith("/settings") ? "page" : undefined}
+          className={cn(
+            "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] font-medium",
+            pathname.startsWith("/settings")
+              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
+              : "text-slate-500 dark:text-slate-400"
+          )}
+        >
+          <Settings size={20} />
+          <span>Settings</span>
+        </Link>
+      </div>
+    </nav>
+  );
+}
