@@ -82,7 +82,7 @@ export default function LoginPage() {
         <section className="hidden max-w-lg lg:block">
           <Link href="/" className="inline-flex items-center gap-3 text-white">
             <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white p-1">
-              <img src="/icon.png" alt="" width={48} height={48} className="h-full w-full object-contain" />
+              <img src="/Logo.png" alt="" width={48} height={48} className="h-full w-full object-contain" />
             </span>
             <span className="text-lg font-bold tracking-tight">Cashflow Copilot</span>
           </Link>
@@ -126,7 +126,7 @@ export default function LoginPage() {
           <div className="mb-6 flex items-center justify-between gap-3 lg:hidden">
             <Link href="/" className="inline-flex items-center gap-2.5 text-sm font-semibold text-white">
               <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-white p-0.5">
-                <img src="/icon.png" alt="" width={40} height={40} className="h-full w-full object-contain" />
+                <img src="/Logo.png" alt="" width={40} height={40} className="h-full w-full object-contain" />
               </span>
               Cashflow Copilot
             </Link>
