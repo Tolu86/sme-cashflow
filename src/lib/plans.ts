@@ -50,7 +50,7 @@ export const PLANS: PlanMeta[] = [
     highlights: [
       "Full accounting & categories",
       "Recurring & automatic bills",
-      "Bank import",
+      "AI receipt photo import",
       "Accounts & multi-currency",
       "Alerts & monthly reports",
       "Customer debt tracking",
