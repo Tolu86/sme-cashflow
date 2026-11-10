@@ -47,7 +47,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     const _db = db;
+    let lastSignedInUid: string | null = null;
     const unsubAuth = onAuthStateChanged(auth, async (u) => {
+      // A new login should show the trial reminder again, even in this tab.
+      if (!u && lastSignedInUid) {
+        try {
+          const prefix = "cashflow-trial-dismissed:" + lastSignedInUid + ":";
+          for (const key of Object.keys(window.sessionStorage)) {
+            if (key.startsWith(prefix)) window.sessionStorage.removeItem(key);
+          }
+        } catch {
+          // Session storage can be unavailable in restrictive browser modes.
+        }
+      }
+      lastSignedInUid = u?.uid ?? null;
       setUser(u);
       if (!u) {
         setProfile(null);
