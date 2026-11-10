@@ -77,11 +77,12 @@ export async function POST(req: Request) {
     }
 
     const calculatedTotal = entries.reduce((sum, entry) => sum + (entry.amount as number), 0);
-    if (body.receiptTotalMinor !== null && body.receiptTotalMinor !== undefined) {
-      if (!Number.isSafeInteger(body.receiptTotalMinor) || body.receiptTotalMinor < 0) {
+    const suppliedTotal = body.receiptTotalMinor;
+    if (suppliedTotal !== null && suppliedTotal !== undefined) {
+      if (typeof suppliedTotal !== "number" || !Number.isSafeInteger(suppliedTotal) || suppliedTotal < 0) {
         return Response.json({ error: "Invalid receipt total." }, { status: 422 });
       }
-      if (Math.abs(calculatedTotal - body.receiptTotalMinor) > 1) {
+      if (Math.abs(calculatedTotal - suppliedTotal) > 1) {
         return Response.json({
           error: "The selected item amounts do not match the reviewed receipt total. Correct the amounts or total before importing.",
         }, { status: 422 });
