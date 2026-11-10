@@ -47,7 +47,7 @@ export default function DashboardPage() {
         <EmptyState
           icon={<Bot size={28} />}
           title="Welcome to Cashflow Copilot"
-          description="Add your first transaction or import a bank CSV to get AI-powered insights about your business."
+          description="Add your first transaction or import a receipt image to get AI-powered insights about your business."
           action={
             <div className="flex gap-3">
               <Link href="/transactions">
@@ -57,7 +57,7 @@ export default function DashboardPage() {
               </Link>
               <Link href="/import">
                 <span className="inline-flex h-10 items-center justify-center rounded-lg bg-white px-4 text-sm font-medium text-zinc-900 ring-1 ring-inset ring-zinc-300 hover:bg-zinc-50 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700">
-                  Import CSV
+                  Import receipt
                 </span>
               </Link>
             </div>
