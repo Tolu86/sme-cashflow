@@ -8,7 +8,7 @@ import {
   Wallet,
   Tag,
   Repeat,
-  Upload,
+  ReceiptText,
   Bot,
   Settings,
   Landmark,
@@ -24,7 +24,7 @@ import type { AccountType } from "@/types";
 const NAV: { href: string; label: string; icon: typeof LayoutDashboard; feature: PlanFeature }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, feature: "dashboard" },
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight, feature: "transactions" },
-  { href: "/import", label: "Import", icon: Upload, feature: "import" },
+  { href: "/import", label: "Receipts", icon: ReceiptText, feature: "import" },
   { href: "/recurring", label: "Recurring", icon: Repeat, feature: "recurring" },
   { href: "/accounts", label: "Accounts", icon: Wallet, feature: "accounts" },
   { href: "/categories", label: "Categories", icon: Tag, feature: "categories" },
