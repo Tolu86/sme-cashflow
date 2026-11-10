@@ -55,8 +55,8 @@ const STEPS: TourStep[] = [
   },
   {
     id: "import",
-    title: "Import your bank CSV",
-    body: "Paste a bank CSV into Import and Copilot auto-categorizes the rows for you. No more data entry marathons.",
+    title: "Import a receipt photo",
+    body: "Upload a PNG or JPG receipt, review each detected purchase and its expense category, then save the approved entries.",
     target: "[data-tour='nav-/import']",
     icon: Upload,
   },
@@ -78,7 +78,7 @@ const STEPS: TourStep[] = [
   {
     id: "done",
     title: "You're all set!",
-    body: "Start by adding your first transaction or importing a bank CSV. Copilot has your back from here.",
+    body: "Start by adding a transaction or importing a receipt image. Review the amounts and categories before saving.",
     icon: Check,
   },
 ];
