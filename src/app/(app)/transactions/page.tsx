@@ -3,7 +3,7 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, ArrowLeftRight, Upload, ArrowDownLeft, ArrowUpRight, TrendingUp, Filter } from "lucide-react";
+import { Plus, Search, ArrowLeftRight, ReceiptText, ArrowDownLeft, ArrowUpRight, TrendingUp, Filter } from "lucide-react";
 import { useBusiness } from "@/components/providers/business-provider";
 import { LoadingScreen, EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -98,7 +98,7 @@ export default function TransactionsPage() {
         <PageHeader title="Transactions" description="A clear view of every payment, expense, and transfer moving through your business." />
         <div className="flex flex-wrap justify-end gap-2">
           <Link href="/import">
-            <Button variant="secondary"><Upload size={16} /> Import CSV</Button>
+            <Button variant="secondary"><ReceiptText size={16} /> Import receipt</Button>
           </Link>
           <Button onClick={() => { setEditing(null); setFormOpen(true); }}>
             <Plus size={16} /> Add transaction
