@@ -199,7 +199,7 @@ export default function ImportPage() {
     setNotice(null);
     if (!accountId) return setError("Choose an account to charge.");
     if (!selected.length) return setError("Select at least one receipt item.");
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) return setError("Choose a valid receipt date.");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return setError("Choose a valid receipt date.");
     if (unmatched) return setError("Every selected item needs a description, amount greater than zero, and expense category.");
     if (difference !== null && Math.abs(difference) > 1) {
       return setError("The selected amounts do not equal the reviewed receipt total. Check taxes, discounts, and misread values.");
