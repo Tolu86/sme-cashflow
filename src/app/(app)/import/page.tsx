@@ -46,7 +46,7 @@ const MAX_UPLOAD_BYTES = 2_800_000;
 async function prepareImage(file: File): Promise<string> {
   const extension = file.name.toLowerCase().split(".").pop();
   if (!["png", "jpeg", "jpg"].includes(extension || "") ||
-      !["image/png", "image/jpeg"].includes(file.type)) {
+      (file.type !== "" && !["image/png", "image/jpeg"].includes(file.type))) {
     throw new Error("Only PNG, JPG and JPEG receipt images are supported.");
   }
   if (file.size > MAX_ORIGINAL_FILE) throw new Error("Choose an image smaller than 12 MB.");
@@ -199,6 +199,7 @@ export default function ImportPage() {
     setNotice(null);
     if (!accountId) return setError("Choose an account to charge.");
     if (!selected.length) return setError("Select at least one receipt item.");
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) return setError("Choose a valid receipt date.");
     if (unmatched) return setError("Every selected item needs a description, amount greater than zero, and expense category.");
     if (difference !== null && Math.abs(difference) > 1) {
       return setError("The selected amounts do not equal the reviewed receipt total. Check taxes, discounts, and misread values.");
@@ -300,6 +301,7 @@ export default function ImportPage() {
           type="file"
           accept=".png,.jpg,.jpeg,image/png,image/jpeg"
           className="hidden"
+          onClick={(event) => event.stopPropagation()}
           onChange={(event) => { void handleFile(event.target.files?.[0]); event.target.value = ""; }}
         />
       </div>
@@ -345,7 +347,7 @@ export default function ImportPage() {
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-5">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">Extracted purchases</h2>
-                <p className="mt-1 text-xs text-slate-500">Select the items to record. All saved entries are expenses.</p>
+                <p className="mt-1 text-xs text-slate-500">Select the items to record. All saved entries are expenses. Do not import a purchase already entered as a single transaction.</p>
               </div>
               <Button variant="secondary" size="sm" onClick={addRow}><Plus size={15} /> Add missing item / fee</Button>
             </div>
