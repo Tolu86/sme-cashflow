@@ -37,9 +37,9 @@ const FEATURES = [
   },
   {
     icon: FileUp,
-    title: "CSV transaction import",
-    description: "Bring your transactions into one workspace without rebuilding a spreadsheet.",
-    detail: "Import and organize",
+    title: "AI receipt photo import",
+    description: "Upload receipts as images, review extracted purchases, and categorize expenses in your business workspace.",
+    detail: "Scan and categorize",
     tone: "emerald",
   },
   {
@@ -248,7 +248,7 @@ export default function HomePage() {
             </div>
             <div className="space-y-3">
               {[
-                { title: "Import your starting point", text: "Upload transactions from a bank CSV to begin organizing your financial activity.", icon: FileUp },
+                { title: "Add your purchases", text: "Upload receipt images, review the extracted amounts, and categorize purchases.", icon: FileUp },
                 { title: "Track what matters", text: "Review accounts, recent transactions, upcoming bills, and current cash position.", icon: Landmark },
                 { title: "Explore your next move", text: "Use your financial dashboard and Copilot to investigate trends and potential cash shortfalls.", icon: Sparkles },
               ].map((step, index) => {
